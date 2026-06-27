@@ -17,7 +17,7 @@ export default async function handler(req, res) {
             payment_method_types: ['gcash', 'paymaya', 'card', 'dob'],
             line_items: [{
               currency: 'PHP',
-              amount: 150000,           // ₱1,500 in centavos
+              amount: 50000,           // ₱500 in centavos
               name: 'Ikigai Journey',
               description: 'Your personal 20-section Ikigai report — AI-guided, specific to your answers.',
               quantity: 1,
