@@ -900,18 +900,18 @@ export default function App() {
   }, [messages, isLoading]);
 
   // On mount: handle PayMongo redirect (?paid=SESSION_ID) or restore existing token
-  useEffect(() => {
-    if (DEMO_MODE) return; // Skip token logic entirely in demo mode
-    const params   = new URLSearchParams(window.location.search);
-    const paidId   = params.get('paid');
-    const existing = getToken();
-    if (paidId) {
-      window.history.replaceState({}, '', window.location.pathname);
-      verifyAndUnlock(paidId);
-    } else if (existing) {
-      setAccessToken(existing);
-    }
-  }, []);
+ useEffect(() => {
+  if (DEMO_MODE) return;
+  const params   = new URLSearchParams(window.location.search);
+  const paidId   = params.get('paid');
+  const existing = getToken();
+  if (paidId) {
+    window.history.replaceState({}, '', window.location.pathname);
+    verifyAndUnlock(paidId);
+  } else if (existing) {
+    setAccessToken(existing);
+  }
+}, []);
 
   const persistToken = (t) => {
     setAccessToken(t);
