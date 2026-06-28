@@ -1,12 +1,14 @@
-// pages/api/payment/verify.js — Verifies PayMongo payment → issues JWT access token.
 import jwt from 'jsonwebtoken';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sessionId } = req.body;
-  if (!sessionId || !sessionId.startsWith('cs_'))
-    return res.status(400).json({ error: 'Invalid session ID format.' });
+
+  console.log('[verify] sessionId received:', sessionId);
+
+  if (!sessionId || sessionId.length < 5)
+    return res.status(400).json({ error: 'No session ID received from PayMongo.' });
 
   const auth = Buffer.from(`${process.env.PAYMONGO_SECRET_KEY}:`).toString('base64');
 
@@ -22,6 +24,9 @@ export default async function handler(req, res) {
   }
 
   const status = checkoutData.data?.attributes?.status;
+  
+  console.log('[verify] PayMongo status:', status);
+
   if (status !== 'completed') {
     return res.status(402).json({
       error: 'Payment not yet completed.', status,
@@ -31,7 +36,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Payment confirmed — issue a signed JWT valid for 7 days
   const accessToken = jwt.sign(
     { sessionId, paid: true, product: 'ikigai-journey' },
     process.env.JWT_SECRET,
