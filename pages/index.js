@@ -20,7 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 // ── TOGGLE THIS LINE ──────────────────────────────────────────────────────────
-const DEMO_MODE = true;  // true = local testing | false = production on Vercel
+const DEMO_MODE = false;  // true = local testing | false = production on Vercel
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Color tokens — resolved from globals.css CSS variables ───────────────────
