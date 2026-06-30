@@ -20,7 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 // ── TOGGLE THIS LINE ──────────────────────────────────────────────────────────
-const DEMO_MODE = false;  // true = local testing | false = production on Vercel
+const DEMO_MODE = true;  // true = local testing | false = production on Vercel
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Color tokens — resolved from globals.css CSS variables ───────────────────
@@ -122,7 +122,7 @@ IKIGAI_REPORT_START
   "energy_feeds":["condition 1","condition 2","condition 3"],
   "energy_drains":["pattern 1","pattern 2","pattern 3"],
   "stop_doing":["item 1","item 2","item 3","item 4","item 5"],
-  "vision_12mo":"Concrete sensory Monday morning 12 months from now.",
+  "vision_12mo":"Concrete sensory Tuesday morning 12 months from now.",
   "vision_5yr":"Where 5 years of this Ikigai leads.",
   "pull_quote1":"Verbatim from their answers",
   "pull_quote2":"Verbatim from their answers",
@@ -344,27 +344,27 @@ const Landing = ({ onStart, isVerifying = false }) => (
     )}
 
     {/* Hero */}
-    <div style={{ maxWidth:920, margin:'0 auto', padding:'56px 28px 32px', display:'grid', gridTemplateColumns:'1fr auto', gap:56, alignItems:'center' }}>
-      <div>
+    <div className="ikigai-hero-grid" style={{ maxWidth:920, margin:'0 auto', padding:'56px 28px 32px', display:'grid', gridTemplateColumns:'1fr auto', gap:56, alignItems:'center' }}>
+      <div className="ikigai-hero-text">
         <p style={{ fontSize:10, letterSpacing:'3.5px', color:G.gold, textTransform:'uppercase', marginBottom:14, fontFamily:G.sans }}>Your Reason for Being</p>
         <h1 style={{ fontSize:'clamp(32px,5vw,50px)', lineHeight:1.12, marginBottom:20, fontWeight:700 }}>
-          Discover Your<br/><em style={{ color:G.gold }}>Purpose</em>
+          Discover Your<br/><em style={{ color:G.gold }}>Ikigai</em>
         </h1>
         <p style={{ fontSize:16, lineHeight:1.85, color:G.soft, marginBottom:32, fontFamily:G.sans, fontWeight:300, maxWidth:420 }}>
           A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for.
         </p>
         <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'14px 32px', fontSize:15, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, marginBottom:14 }}>
-          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱500'}
+          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱1,500'}
         </button>
         <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans }}>GCash · Maya · Credit/Debit Card · ~15–20 min</p>
       </div>
-      <div style={{ flexShrink:0, width:300 }}><IkigaiDiagram/></div>
+      <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:300 }}><IkigaiDiagram/></div>
     </div>
 
     {/* Features */}
     <div style={{ maxWidth:920, margin:'0 auto', padding:'8px 28px 44px' }}>
       <p style={{ fontSize:10, letterSpacing:'3px', color:G.muted, textTransform:'uppercase', marginBottom:22, fontFamily:G.sans, textAlign:'center' }}>What's in your 20-section report</p>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10 }}>
+      <div className="ikigai-feature-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10 }}>
         {[
           ['Your Ikigai Sentence','Your purpose distilled to one definitive line'],
           ['Your Archetype','The specific identity type you embody'],
@@ -387,7 +387,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
     {/* Bottom CTA */}
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
-      <p style={{ fontSize:30, fontWeight:700, marginBottom:8 }}>₱500</p>
+      <p style={{ fontSize:30, fontWeight:700, marginBottom:8 }}>₱1,500</p>
       <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'15px 44px', fontSize:16, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans }}>
         {isVerifying ? 'Verifying...' : 'Start Now'}
@@ -408,14 +408,14 @@ const Payment = ({ onSuccess, onBack }) => {
     <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:G.sans }}>
       <div style={{ maxWidth:400, width:'100%' }}>
         <button onClick={onBack} style={{ background:'none', border:'none', color:G.muted, cursor:'pointer', marginBottom:20, fontSize:13 }}>← Back</button>
-        <div style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:32 }}>
+        <div className="ikigai-payment-card" style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:32 }}>
           <div style={{ textAlign:'center', marginBottom:26 }}>
             <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><PetalMark size={44} animated/></div>
             <h2 style={{ color:G.cream, fontSize:20, fontWeight:700, marginBottom:4, fontFamily:G.serif }}>Ikigai Journey</h2>
             <p style={{ color:G.muted, fontSize:12 }}>Your 20-section personal report</p>
           </div>
           <div style={{ background:G.surf2, borderRadius:10, padding:'13px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
-            <div style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱500</div>
+            <div style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱1,500</div>
             <div style={{ fontSize:11, color:G.muted, marginTop:3 }}>One-time · Instant access</div>
           </div>
           <p style={{ fontSize:11, color:G.muted, marginBottom:10, textTransform:'uppercase', letterSpacing:'1.5px' }}>Payment method</p>
@@ -434,7 +434,7 @@ const Payment = ({ onSuccess, onBack }) => {
             </p>
           </div>
           <button onClick={pay} disabled={!method||loading} style={{ width:'100%', background:method?G.gold:G.brd, color:method?G.bg:G.muted, border:'none', borderRadius:10, padding:14, fontSize:15, fontWeight:600, cursor:method?'pointer':'not-allowed', fontFamily:G.sans }}>
-            {loading ? '⌛ Processing...' : 'Pay ₱500'}
+            {loading ? '⌛ Processing...' : 'Pay ₱1,500'}
           </button>
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:12 }}>🔒 Secured by PayMongo</p>
         </div>
@@ -500,10 +500,10 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
   ];
 
   return (
-    <div style={{ background:G.bg, height:'100vh', display:'flex', overflow:'hidden', fontFamily:G.sans }}>
+    <div className="ikigai-chat-shell" style={{ background:G.bg, height:'100vh', display:'flex', overflow:'hidden', fontFamily:G.sans }}>
       {/* Sidebar */}
-      <div style={{ width:214, borderRight:`1px solid ${G.brd}`, padding:'18px 16px', display:'flex', flexDirection:'column', flexShrink:0, background:G.surf }}>
-        <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:26 }}>
+      <div className="ikigai-chat-sidebar" style={{ width:214, borderRight:`1px solid ${G.brd}`, padding:'18px 16px', display:'flex', flexDirection:'column', flexShrink:0, background:G.surf }}>
+        <div className="ikigai-chat-sidebar-brand" style={{ display:'flex', alignItems:'center', gap:9, marginBottom:26 }}>
           <PetalMark size={26}/>
           <span style={{ fontSize:13, fontWeight:700, color:G.gold, fontFamily:G.serif }}>Ikigai Journey</span>
         </div>
@@ -546,7 +546,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           {messages.filter(m=>!m.hidden).map((m,i)=>(
             <div key={i} className="fade-up" style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start' }}>
               {m.role==='assistant' && <div style={{ marginRight:10, marginTop:2, flexShrink:0 }}><PetalMark size={20}/></div>}
-              <div style={{ maxWidth:'72%', background:m.role==='user'?G.gold:G.surf, borderRadius:m.role==='user'?'16px 16px 4px 16px':'4px 16px 16px 16px', padding:'12px 16px', border:m.role==='assistant'?`1px solid ${G.brd}`:'none' }}>
+              <div className="ikigai-chat-bubble" style={{ maxWidth:'72%', background:m.role==='user'?G.gold:G.surf, borderRadius:m.role==='user'?'16px 16px 4px 16px':'4px 16px 16px 16px', padding:'12px 16px', border:m.role==='assistant'?`1px solid ${G.brd}`:'none' }}>
                 <Msg text={m.content} isUser={m.role==='user'}/>
               </div>
             </div>
@@ -573,13 +573,13 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           {sttState==='error' && sttMsg && (
             <div style={{ background:'#2a0a14', border:`1px solid ${G.coral}30`, borderRadius:8, padding:'8px 12px', marginBottom:8, fontSize:12, color:G.coral }}>{sttMsg}</div>
           )}
-          <div style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
+          <div className="ikigai-chat-input-row" style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
             <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
               placeholder={sttState==='recording'?(lang==='fil'?'Magsalita ngayon...':'Speak now...'):(lang==='fil'?'Mag-type o gamitin ang mic...':'Type or use the mic to answer...')}
               rows={2}
               style={{ flex:1, background:sttState==='recording'?'#1a0a0a':G.surf2, border:`1px solid ${sttState==='recording'?G.red+'50':G.brd}`, borderRadius:10, padding:'10px 14px', color:G.cream, fontSize:14, resize:'none', fontFamily:G.sans, outline:'none', lineHeight:1.5, transition:'all .2s' }}
             />
-            <div style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }}>
+            <div className="ikigai-lang-toggle" style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }}>
               {['en','fil'].map(l=>(
                 <button key={l} onClick={()=>setLang(l)} style={{ background:lang===l?G.gold:G.surf2, color:lang===l?G.bg:G.muted, border:`1px solid ${lang===l?G.gold:G.brd}`, borderRadius:6, padding:'4px 8px', fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:G.sans, letterSpacing:'.5px' }}>
                   {l==='en'?'EN':'FIL'}
@@ -656,10 +656,10 @@ const Report = ({ data, onRestart }) => {
         </div>
       </div>
 
-      <div style={{ maxWidth:760, margin:'0 auto', padding:'44px 26px' }}>
+      <div className="ikigai-report-wrap" style={{ maxWidth:760, margin:'0 auto', padding:'44px 26px' }}>
 
         {/* Hero */}
-        <div className="report-section" style={{ textAlign:'center', marginBottom:52, padding:'44px 32px', background:G.surf, borderRadius:20, border:`1px solid ${G.brd}` }}>
+        <div className="report-section ikigai-report-hero" style={{ textAlign:'center', marginBottom:52, padding:'44px 32px', background:G.surf, borderRadius:20, border:`1px solid ${G.brd}` }}>
           <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={52} animated/></div>
           <p style={{ fontSize:10, letterSpacing:'3px', color:G.muted, textTransform:'uppercase', marginBottom:16 }}>Your Ikigai</p>
           <blockquote style={{ fontSize:'clamp(16px,3vw,22px)', fontFamily:G.serif, fontStyle:'italic', color:G.gold, lineHeight:1.55, margin:'0 auto', maxWidth:540 }}>
@@ -677,7 +677,7 @@ const Report = ({ data, onRestart }) => {
 
         <Sec title="Your Archetype" pageBreak>
           <Card accent={G.gold}>
-            <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
+            <div className="print-stack ikigai-report-archetype-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
               <div>
                 <h3 style={{ color:G.gold, fontSize:22, fontFamily:G.serif, fontWeight:700, marginBottom:5 }}>{data.archetype_name}</h3>
                 <p style={{ color:G.muted, fontSize:13, marginBottom:18, fontStyle:'italic' }}>{data.archetype_tagline}</p>
@@ -695,7 +695,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="The Four Circles" accent={G.muted}>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             {[[G.gold,'What You Love',data.love_summary],[G.lav,"What You're Good At",data.goodat_summary],[G.coral,'What the World Needs',data.worldneeds_summary],[G.sage,'What You Can Be Paid For',data.paidfor_summary]].map(([c,l,t],i)=>(
               <div key={i} style={{ background:G.surf, border:`1px solid ${c}20`, borderRadius:10, padding:18, borderTop:`3px solid ${c}` }}>
                 <Lbl text={l} c={c}/><p style={{ fontSize:13, lineHeight:1.72, color:G.soft, margin:0 }}>{t}</p>
@@ -722,7 +722,7 @@ const Report = ({ data, onRestart }) => {
           <Card accent={G.gold}>
             <p style={{ fontSize:17, fontFamily:G.serif, color:G.gold, marginBottom:10, fontWeight:700 }}>{data.one_thing}</p>
             <p style={{ fontSize:13, color:G.soft, lineHeight:1.72, marginBottom:18 }}>{data.one_thing_why}</p>
-            <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+            <div className="print-stack ikigai-report-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
               {[[G.gold,'Today',data.action_today],[G.lav,'This Week',data.action_week],[G.sage,'This Month',data.action_month]].map(([c,l,v],i)=>(
                 <div key={i} style={{ background:G.surf2, borderRadius:10, padding:14, border:`1px solid ${c}20` }}>
                   <Lbl text={l} c={c}/><p style={{ fontSize:12, color:G.cream, lineHeight:1.55, margin:0 }}>{v}</p>
@@ -733,7 +733,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="How This Changes Your Work" accent={G.lav}>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             {[['Marketing Shift',data.marketing_shift,G.lav],['Sales Shift',data.sales_shift,G.lav],['Offer & Pricing Shift',data.offer_shift,G.lav]].map(([l,v,c],i)=>(
               <Card key={i} accent={c}><Lbl text={l} c={c}/><p style={{ fontSize:13, color:G.cream, lineHeight:1.62, margin:0 }}>{v}</p></Card>
             ))}
@@ -745,7 +745,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="Your 3 Content Pillars" accent={G.coral} pageBreak>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
             {[data.pillar1,data.pillar2,data.pillar3].filter(Boolean).map((p,i)=>(
               <Card key={i} accent={G.coral}>
                 <Lbl text={p.name} c={G.coral}/>
@@ -768,7 +768,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="Your 3 AI Employees" accent={G.lav} pageBreak>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
             {(data.ai_employees||[]).map((e,i)=>(
               <Card key={i} accent={G.lav}>
                 <Lbl text={e.role} c={G.lav}/>
@@ -789,7 +789,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="Your Energy Map" accent={G.sage}>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <Card accent={G.sage}><Lbl text="What feeds you" c={G.sage}/>{(data.energy_feeds||[]).map((f,i)=><p key={i} style={{ fontSize:13, color:G.sage, margin:'4px 0' }}>↑ {f}</p>)}</Card>
             <Card accent={G.coral}><Lbl text="What drains you" c={G.coral}/>{(data.energy_drains||[]).map((d,i)=><p key={i} style={{ fontSize:13, color:G.coral, margin:'4px 0' }}>↓ {d}</p>)}</Card>
           </div>
@@ -834,7 +834,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="Curated for You" accent={G.muted}>
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div className="print-stack ikigai-report-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <div>
               <Lbl text="Books"/>
               {(data.books||[]).map((b,i)=><Card key={i}><p style={{ fontSize:13, fontWeight:600, color:G.cream, marginBottom:2 }}>{b.title}</p><p style={{ fontSize:11, color:G.muted, marginBottom:6 }}>{b.author}</p><p style={{ fontSize:12, color:G.soft, lineHeight:1.55, margin:0 }}>{b.why}</p></Card>)}
@@ -847,7 +847,7 @@ const Report = ({ data, onRestart }) => {
         </Sec>
 
         <Sec title="Your Next Steps">
-          <div className="print-stack" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+          <div className="print-stack ikigai-report-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
             {[[G.gold,'Today',data.next_today],[G.lav,'This Week',data.next_week],[G.sage,'This Month',data.next_month]].map(([c,l,v],i)=>(
               <div key={i} style={{ background:G.surf, border:`1px solid ${c}22`, borderRadius:12, padding:20, borderTop:`3px solid ${c}` }}>
                 <Lbl text={l} c={c}/><p style={{ fontSize:13, color:G.cream, lineHeight:1.62, margin:0 }}>{v}</p>
@@ -899,28 +899,15 @@ export default function App() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // On mount: handle PayMongo redirect (?paid=true) or restore existing token
+  // On mount: handle PayMongo redirect (?paid=SESSION_ID) or restore existing token
   useEffect(() => {
-    if (DEMO_MODE) return;
-
+    if (DEMO_MODE) return; // Skip token logic entirely in demo mode
     const params   = new URLSearchParams(window.location.search);
-    const paid     = params.get('paid');
+    const paidId   = params.get('paid');
     const existing = getToken();
-
-    console.log('[App mount] paid param:', paid);
-    console.log('[App mount] existing token:', existing);
-
-    if (paid === 'true') {
+    if (paidId) {
       window.history.replaceState({}, '', window.location.pathname);
-      const pendingSession = sessionStorage.getItem('ikigai_pending_session');
-      console.log('[App mount] pendingSession from storage:', pendingSession);
-
-      if (pendingSession) {
-        sessionStorage.removeItem('ikigai_pending_session');
-        verifyAndUnlock(pendingSession);
-      } else {
-        alert('Could not find your payment session. Contact support if you were charged.');
-      }
+      verifyAndUnlock(paidId);
     } else if (existing) {
       setAccessToken(existing);
     }
@@ -935,13 +922,11 @@ export default function App() {
     setIsVerifying(true);
     try {
       const result = await apiVerifyPayment(sessionId);
-      console.log('[verifyAndUnlock] result:', result);
       if (result.verified && result.token) {
         persistToken(result.token);
         await startChat(result.token);
       }
     } catch (err) {
-      console.error('[verifyAndUnlock] error:', err);
       alert('Payment verification failed: ' + err.message + '\n\nContact support if you were charged.');
     } finally {
       setIsVerifying(false);
@@ -951,27 +936,23 @@ export default function App() {
   // Called when user clicks "Begin Your Journey"
   const handleStart = async () => {
     if (DEMO_MODE) {
+      // Demo: skip payment, go straight to chat
       await startChat(null);
       return;
     }
 
+    // Production: check for existing valid token first
     const existing = accessToken || getToken();
     if (existing) {
       await startChat(existing);
       return;
     }
 
+    // No token → redirect to PayMongo checkout
     try {
-      const { checkoutUrl, sessionId } = await apiCreateCheckout();
-      console.log('[handleStart] checkoutUrl:', checkoutUrl);
-      console.log('[handleStart] sessionId:', sessionId);
-
-      // Save sessionId locally BEFORE redirecting — we don't rely on PayMongo's URL placeholder
-      sessionStorage.setItem('ikigai_pending_session', sessionId);
-
+      const { checkoutUrl } = await apiCreateCheckout();
       window.location.href = checkoutUrl;
     } catch (err) {
-      console.error('[handleStart] error:', err);
       alert('Could not start payment: ' + err.message);
     }
   };
@@ -1052,6 +1033,7 @@ export default function App() {
     setReportData(null);
   };
 
+  // Production Whisper function — only passed to ChatView when not in demo mode
   const whisperFn = DEMO_MODE ? null : apiWhisper;
 
   if (view === 'report') {
