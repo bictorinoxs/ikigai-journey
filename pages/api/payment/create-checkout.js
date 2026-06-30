@@ -1,5 +1,7 @@
 // pages/api/payment/create-checkout.js
-// Creates a PayMongo checkout session and returns the redirect URL.
+// Creates a PayMongo checkout session and returns the redirect URL + session ID.
+// success_url does NOT rely on PayMongo's placeholder substitution (unreliable).
+// Instead, the frontend stores sessionId locally before redirecting.
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -29,13 +31,12 @@ export default async function handler(req, res) {
                 currency: 'PHP',
                 amount: 50000,
                 name: 'Ikigai Journey',
-                description: 'Your personal 20-section Ikigai report — AI-guided, specific to your answers.',
+                description: 'Your personal 20-section Ikigai report.',
                 quantity: 1,
               },
             ],
-            // Use string concatenation — NOT template literals
-            // PayMongo replaces {{CHECKOUT_SESSION_ID}} with the real session ID
-            success_url: BASE + '/?paid={{CHECKOUT_SESSION_ID}}',
+            // Fixed URL — no placeholder. We already have sessionId in the response below.
+            success_url: BASE + '/?paid=true',
             cancel_url:  BASE + '/?cancelled=true',
             send_email_receipt: true,
             show_description:   true,
@@ -53,6 +54,8 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Could not create checkout session. Try again.' });
     }
 
+    // Return BOTH the checkout URL and the session ID.
+    // Frontend will save sessionId to sessionStorage BEFORE redirecting.
     return res.status(200).json({
       checkoutUrl: data.data.attributes.checkout_url,
       sessionId:   data.data.id,
