@@ -899,26 +899,32 @@ export default function App() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // On mount: handle PayMongo redirect (?paid=SESSION_ID) or restore existing token
- useEffect(() => {
-  if (DEMO_MODE) return;
-  const params   = new URLSearchParams(window.location.search);
-  const paid     = params.get('paid'); // now just "true", not a session ID
-  const existing = getToken();
+  // On mount: handle PayMongo redirect (?paid=true) or restore existing token
+  useEffect(() => {
+    if (DEMO_MODE) return;
 
-  if (paid === 'true') {
-    window.history.replaceState({}, '', window.location.pathname);
-    const pendingSession = sessionStorage.getItem('ikigai_pending_session');
-    if (pendingSession) {
-      sessionStorage.removeItem('ikigai_pending_session');
-      verifyAndUnlock(pendingSession);
-    } else {
-      alert('Could not find your payment session. Contact support if you were charged.');
+    const params   = new URLSearchParams(window.location.search);
+    const paid     = params.get('paid');
+    const existing = getToken();
+
+    console.log('[App mount] paid param:', paid);
+    console.log('[App mount] existing token:', existing);
+
+    if (paid === 'true') {
+      window.history.replaceState({}, '', window.location.pathname);
+      const pendingSession = sessionStorage.getItem('ikigai_pending_session');
+      console.log('[App mount] pendingSession from storage:', pendingSession);
+
+      if (pendingSession) {
+        sessionStorage.removeItem('ikigai_pending_session');
+        verifyAndUnlock(pendingSession);
+      } else {
+        alert('Could not find your payment session. Contact support if you were charged.');
+      }
+    } else if (existing) {
+      setAccessToken(existing);
     }
-  } else if (existing) {
-    setAccessToken(existing);
-  }
-}, []);
+  }, []);
 
   const persistToken = (t) => {
     setAccessToken(t);
@@ -929,11 +935,13 @@ export default function App() {
     setIsVerifying(true);
     try {
       const result = await apiVerifyPayment(sessionId);
+      console.log('[verifyAndUnlock] result:', result);
       if (result.verified && result.token) {
         persistToken(result.token);
         await startChat(result.token);
       }
     } catch (err) {
+      console.error('[verifyAndUnlock] error:', err);
       alert('Payment verification failed: ' + err.message + '\n\nContact support if you were charged.');
     } finally {
       setIsVerifying(false);
@@ -943,27 +951,29 @@ export default function App() {
   // Called when user clicks "Begin Your Journey"
   const handleStart = async () => {
     if (DEMO_MODE) {
-      // Demo: skip payment, go straight to chat
       await startChat(null);
       return;
     }
 
-    // Production: check for existing valid token first
     const existing = accessToken || getToken();
     if (existing) {
       await startChat(existing);
       return;
     }
 
-    // No token → redirect to PayMongo checkout
     try {
-  const { checkoutUrl, sessionId } = await apiCreateCheckout();
-  // Save sessionId locally BEFORE redirecting — we don't rely on PayMongo's URL placeholder
-  sessionStorage.setItem('ikigai_pending_session', sessionId);
-  window.location.href = checkoutUrl;
-} catch (err) {
-  alert('Could not start payment: ' + err.message);
-}
+      const { checkoutUrl, sessionId } = await apiCreateCheckout();
+      console.log('[handleStart] checkoutUrl:', checkoutUrl);
+      console.log('[handleStart] sessionId:', sessionId);
+
+      // Save sessionId locally BEFORE redirecting — we don't rely on PayMongo's URL placeholder
+      sessionStorage.setItem('ikigai_pending_session', sessionId);
+
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      console.error('[handleStart] error:', err);
+      alert('Could not start payment: ' + err.message);
+    }
   };
 
   const startChat = async (token) => {
@@ -1042,7 +1052,6 @@ export default function App() {
     setReportData(null);
   };
 
-  // Production Whisper function — only passed to ChatView when not in demo mode
   const whisperFn = DEMO_MODE ? null : apiWhisper;
 
   if (view === 'report') {
