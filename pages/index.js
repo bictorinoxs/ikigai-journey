@@ -122,7 +122,7 @@ IKIGAI_REPORT_START
   "energy_feeds":["condition 1","condition 2","condition 3"],
   "energy_drains":["pattern 1","pattern 2","pattern 3"],
   "stop_doing":["item 1","item 2","item 3","item 4","item 5"],
-  "vision_12mo":"Concrete sensory Tuesday morning 12 months from now.",
+  "vision_12mo":"Concrete sensory Monday morning 12 months from now.",
   "vision_5yr":"Where 5 years of this Ikigai leads.",
   "pull_quote1":"Verbatim from their answers",
   "pull_quote2":"Verbatim from their answers",
@@ -348,13 +348,13 @@ const Landing = ({ onStart, isVerifying = false }) => (
       <div className="ikigai-hero-text">
         <p style={{ fontSize:10, letterSpacing:'3.5px', color:G.gold, textTransform:'uppercase', marginBottom:14, fontFamily:G.sans }}>Your Reason for Being</p>
         <h1 style={{ fontSize:'clamp(32px,5vw,50px)', lineHeight:1.12, marginBottom:20, fontWeight:700 }}>
-          Discover Your<br/><em style={{ color:G.gold }}>Ikigai</em>
+          Discover Your<br/><em style={{ color:G.gold }}>Purpose</em>
         </h1>
         <p style={{ fontSize:16, lineHeight:1.85, color:G.soft, marginBottom:32, fontFamily:G.sans, fontWeight:300, maxWidth:420 }}>
           A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for.
         </p>
         <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'14px 32px', fontSize:15, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, marginBottom:14 }}>
-          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱1,500'}
+          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱500'}
         </button>
         <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans }}>GCash · Maya · Credit/Debit Card · ~15–20 min</p>
       </div>
@@ -387,7 +387,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
     {/* Bottom CTA */}
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
-      <p style={{ fontSize:30, fontWeight:700, marginBottom:8 }}>₱1,500</p>
+      <p style={{ fontSize:30, fontWeight:700, marginBottom:8 }}>₱500</p>
       <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'15px 44px', fontSize:16, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans }}>
         {isVerifying ? 'Verifying...' : 'Start Now'}
@@ -415,7 +415,7 @@ const Payment = ({ onSuccess, onBack }) => {
             <p style={{ color:G.muted, fontSize:12 }}>Your 20-section personal report</p>
           </div>
           <div style={{ background:G.surf2, borderRadius:10, padding:'13px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
-            <div style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱1,500</div>
+            <div style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱500</div>
             <div style={{ fontSize:11, color:G.muted, marginTop:3 }}>One-time · Instant access</div>
           </div>
           <p style={{ fontSize:11, color:G.muted, marginBottom:10, textTransform:'uppercase', letterSpacing:'1.5px' }}>Payment method</p>
@@ -434,7 +434,7 @@ const Payment = ({ onSuccess, onBack }) => {
             </p>
           </div>
           <button onClick={pay} disabled={!method||loading} style={{ width:'100%', background:method?G.gold:G.brd, color:method?G.bg:G.muted, border:'none', borderRadius:10, padding:14, fontSize:15, fontWeight:600, cursor:method?'pointer':'not-allowed', fontFamily:G.sans }}>
-            {loading ? '⌛ Processing...' : 'Pay ₱1,500'}
+            {loading ? '⌛ Processing...' : 'Pay ₱500'}
           </button>
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:12 }}>🔒 Secured by PayMongo</p>
         </div>
