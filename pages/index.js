@@ -903,11 +903,18 @@ export default function App() {
  useEffect(() => {
   if (DEMO_MODE) return;
   const params   = new URLSearchParams(window.location.search);
-  const paidId   = params.get('paid');
+  const paid     = params.get('paid'); // now just "true", not a session ID
   const existing = getToken();
-  if (paidId) {
+
+  if (paid === 'true') {
     window.history.replaceState({}, '', window.location.pathname);
-    verifyAndUnlock(paidId);
+    const pendingSession = sessionStorage.getItem('ikigai_pending_session');
+    if (pendingSession) {
+      sessionStorage.removeItem('ikigai_pending_session');
+      verifyAndUnlock(pendingSession);
+    } else {
+      alert('Could not find your payment session. Contact support if you were charged.');
+    }
   } else if (existing) {
     setAccessToken(existing);
   }
@@ -950,11 +957,13 @@ export default function App() {
 
     // No token → redirect to PayMongo checkout
     try {
-      const { checkoutUrl } = await apiCreateCheckout();
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      alert('Could not start payment: ' + err.message);
-    }
+  const { checkoutUrl, sessionId } = await apiCreateCheckout();
+  // Save sessionId locally BEFORE redirecting — we don't rely on PayMongo's URL placeholder
+  sessionStorage.setItem('ikigai_pending_session', sessionId);
+  window.location.href = checkoutUrl;
+} catch (err) {
+  alert('Could not start payment: ' + err.message);
+}
   };
 
   const startChat = async (token) => {
