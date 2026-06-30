@@ -1,8 +1,11 @@
 // pages/api/payment/verify.js
-// Verifies a PayMongo checkout session, retrying briefly if status isn't final yet.
-import jwt from 'jsonwebtoken';
+// Verifies a PayMongo checkout session.
+//
+// IMPORTANT: PayMongo's checkout_session.status can remain "active" even
+// after a successful payment. The reliable signal is the `paid_at` timestamp
+// or payment_intent.status === "succeeded" — NOT status === "completed".
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+import jwt from 'jsonwebtoken';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -16,49 +19,45 @@ export default async function handler(req, res) {
 
   const auth = Buffer.from(`${process.env.PAYMONGO_SECRET_KEY}:`).toString('base64');
 
-  // Retry up to 4 times with short delays — PayMongo can take a moment
-  // to mark a checkout session as "completed" after the user pays.
-  const MAX_ATTEMPTS = 4;
-  const DELAY_MS = 1500;
-
   let checkoutData;
-  let status;
+  try {
+    const response = await fetch(
+      `https://api.paymongo.com/v1/checkout_sessions/${sessionId}`,
+      { headers: { Authorization: 'Basic ' + auth } }
+    );
+    checkoutData = await response.json();
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const response = await fetch(
-        `https://api.paymongo.com/v1/checkout_sessions/${sessionId}`,
-        { headers: { Authorization: 'Basic ' + auth } }
-      );
-      checkoutData = await response.json();
-
-      if (!response.ok) {
-        console.error('[verify] PayMongo fetch error:', JSON.stringify(checkoutData));
-        return res.status(400).json({ error: 'Could not retrieve checkout session.' });
-      }
-
-      status = checkoutData.data?.attributes?.status;
-      console.log(`[verify] attempt ${attempt} — status:`, status);
-
-      if (status === 'completed') break;       // success — stop retrying
-      if (status === 'expired') break;          // permanent failure — stop retrying
-
-      // status is still "active" — payment hasn't fully processed yet, wait and retry
-      if (attempt < MAX_ATTEMPTS) await sleep(DELAY_MS);
-
-    } catch (err) {
-      console.error('[verify] Network error:', err?.message);
-      return res.status(502).json({ error: 'Could not reach PayMongo.' });
+    if (!response.ok) {
+      console.error('[verify] PayMongo fetch error:', JSON.stringify(checkoutData));
+      return res.status(400).json({ error: 'Could not retrieve checkout session.' });
     }
+  } catch (err) {
+    console.error('[verify] Network error:', err?.message);
+    return res.status(502).json({ error: 'Could not reach PayMongo.' });
   }
 
-  if (status !== 'completed') {
+  const attrs        = checkoutData.data?.attributes || {};
+  const status        = attrs.status;
+  const paidAt         = attrs.paid_at;
+  const intentStatus   = attrs.payment_intent?.attributes?.status;
+  const paymentsPaid    = (attrs.payments || []).some(p => p.attributes?.status === 'paid');
+
+  console.log('[verify] checkout status:', status);
+  console.log('[verify] paid_at:', paidAt);
+  console.log('[verify] payment_intent status:', intentStatus);
+  console.log('[verify] any payment marked paid:', paymentsPaid);
+
+  // A session is genuinely paid if ANY of these are true —
+  // checkout_session.status alone is NOT reliable.
+  const isPaid = Boolean(paidAt) || intentStatus === 'succeeded' || paymentsPaid;
+
+  if (!isPaid) {
     return res.status(402).json({
       error: 'Payment not yet completed.',
       status,
       message: status === 'expired'
         ? 'Session expired. Please start a new payment.'
-        : 'Payment is still processing. Please wait a few seconds and refresh.',
+        : 'Payment is still processing. Please wait a moment and try again.',
     });
   }
 
