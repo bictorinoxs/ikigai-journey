@@ -1,56 +1,70 @@
 // pages/api/test-paymongo.js
-// Visit /api/test-paymongo to diagnose your PayMongo setup.
-// DELETE this file before going fully live.
+// Visit /api/test-paymongo?session=cs_xxxxx to check a specific checkout session
+// Visit /api/test-paymongo to just test the key works
 
 export default async function handler(req, res) {
   const key = process.env.PAYMONGO_SECRET_KEY;
 
   if (!key) {
-    return res.status(200).json({
-      ok: false,
-      problem: 'PAYMONGO_SECRET_KEY is not set in Vercel environment variables',
-    });
+    return res.status(200).json({ ok: false, problem: 'PAYMONGO_SECRET_KEY not set' });
   }
 
   const keyPrefix = key.slice(0, 12);
   const keyMode   = key.startsWith('sk_live_') ? 'LIVE' : 'TEST';
+  const auth      = Buffer.from(key + ':').toString('base64');
 
-  // Try to list payment methods — simplest PayMongo API call
-  const auth = Buffer.from(key + ':').toString('base64');
+  const { session } = req.query;
 
-  try {
-    const response = await fetch('https://api.paymongo.com/v1/payment_methods', {
-      headers: { Authorization: 'Basic ' + auth },
-    });
+  // If a session ID is provided, look it up directly
+  if (session) {
+    try {
+      const response = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${session}`, {
+        headers: { Authorization: 'Basic ' + auth },
+      });
+      const data = await response.json();
 
-    const data = await response.json();
-
-    if (!response.ok) {
       return res.status(200).json({
-        ok: false,
+        ok: response.ok,
         key_prefix: keyPrefix,
         key_mode: keyMode,
+        session_id_checked: session,
         http_status: response.status,
-        paymongo_error: data?.errors?.[0]?.detail || JSON.stringify(data),
-        fix: response.status === 401
-          ? 'Your PAYMONGO_SECRET_KEY is invalid or wrong. Copy it again from app.paymongo.com → Developers → API Keys'
-          : 'Unexpected error from PayMongo',
+        full_response: data,
       });
+    } catch (err) {
+      return res.status(200).json({ ok: false, error: err?.message });
     }
+  }
+
+  // No session provided — just create a test checkout session to confirm the key can CREATE sessions
+  try {
+    const createRes = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Basic ' + auth },
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            payment_method_types: ['gcash'],
+            line_items: [{ currency: 'PHP', amount: 10000, name: 'Test', quantity: 1 }],
+            success_url: 'https://example.com/success',
+            cancel_url: 'https://example.com/cancel',
+          },
+        },
+      }),
+    });
+    const createData = await createRes.json();
 
     return res.status(200).json({
-      ok: true,
+      ok: createRes.ok,
       key_prefix: keyPrefix,
       key_mode: keyMode,
-      message: 'PayMongo key is valid and working',
+      message: createRes.ok
+        ? 'Key can successfully CREATE checkout sessions. Created session ID: ' + createData.data?.id
+        : 'Key FAILED to create a checkout session',
+      created_session_id: createData.data?.id || null,
+      full_response: createData,
     });
-
   } catch (err) {
-    return res.status(200).json({
-      ok: false,
-      key_prefix: keyPrefix,
-      key_mode: keyMode,
-      error: err?.message,
-    });
+    return res.status(200).json({ ok: false, error: err?.message });
   }
 }
