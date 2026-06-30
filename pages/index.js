@@ -122,7 +122,7 @@ IKIGAI_REPORT_START
   "energy_feeds":["condition 1","condition 2","condition 3"],
   "energy_drains":["pattern 1","pattern 2","pattern 3"],
   "stop_doing":["item 1","item 2","item 3","item 4","item 5"],
-  "vision_12mo":"Concrete sensory Monday morning 12 months from now.",
+  "vision_12mo":"Concrete sensory Morning morning 12 months from now.",
   "vision_5yr":"Where 5 years of this Ikigai leads.",
   "pull_quote1":"Verbatim from their answers",
   "pull_quote2":"Verbatim from their answers",
@@ -899,15 +899,26 @@ export default function App() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // On mount: handle PayMongo redirect (?paid=SESSION_ID) or restore existing token
+  // On mount: handle PayMongo redirect (?paid=true) or restore existing token.
+  // IMPORTANT: PayMongo's success_url placeholder substitution is unreliable,
+  // so we DON'T rely on it injecting the real session ID into the URL.
+  // Instead, the sessionId is saved to sessionStorage right before redirecting
+  // to checkout (see handleStart below), and read back here on return.
   useEffect(() => {
     if (DEMO_MODE) return; // Skip token logic entirely in demo mode
     const params   = new URLSearchParams(window.location.search);
-    const paidId   = params.get('paid');
+    const paid     = params.get('paid'); // just "true", not a session ID
     const existing = getToken();
-    if (paidId) {
+
+    if (paid === 'true') {
       window.history.replaceState({}, '', window.location.pathname);
-      verifyAndUnlock(paidId);
+      const pendingSession = sessionStorage.getItem('ikigai_pending_session');
+      if (pendingSession) {
+        sessionStorage.removeItem('ikigai_pending_session');
+        verifyAndUnlock(pendingSession);
+      } else {
+        alert('Could not find your payment session. Contact support if you were charged.');
+      }
     } else if (existing) {
       setAccessToken(existing);
     }
@@ -950,7 +961,10 @@ export default function App() {
 
     // No token → redirect to PayMongo checkout
     try {
-      const { checkoutUrl } = await apiCreateCheckout();
+      const { checkoutUrl, sessionId } = await apiCreateCheckout();
+      // Save sessionId locally BEFORE redirecting — PayMongo's URL placeholder
+      // substitution is unreliable, so we don't depend on it.
+      sessionStorage.setItem('ikigai_pending_session', sessionId);
       window.location.href = checkoutUrl;
     } catch (err) {
       alert('Could not start payment: ' + err.message);
