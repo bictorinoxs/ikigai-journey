@@ -122,7 +122,7 @@ IKIGAI_REPORT_START
   "energy_feeds":["condition 1","condition 2","condition 3"],
   "energy_drains":["pattern 1","pattern 2","pattern 3"],
   "stop_doing":["item 1","item 2","item 3","item 4","item 5"],
-  "vision_12mo":"Concrete sensory Morning morning 12 months from now.",
+  "vision_12mo":"Concrete sensory Monday morning 12 months from now.",
   "vision_5yr":"Where 5 years of this Ikigai leads.",
   "pull_quote1":"Verbatim from their answers",
   "pull_quote2":"Verbatim from their answers",
@@ -1009,7 +1009,7 @@ export default function App() {
     try {
       const token    = accessToken || getToken();
       const apiMsgs  = updated.map(({ role, content }) => ({ role, content }));
-      const maxTok   = newCount >= 15 ? 4000 : 1000;
+      const maxTok   = newCount >= 14 ? 4096 : 1000;
       const text     = await apiChat(apiMsgs, token, maxTok, SP);
 
       if (text.includes('IKIGAI_REPORT_START')) {

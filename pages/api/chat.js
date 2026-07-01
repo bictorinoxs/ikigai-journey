@@ -1,8 +1,13 @@
 // pages/api/chat.js
-// Skips JWT in development (NODE_ENV=development) for localhost testing.
+// Server-side Anthropic proxy. API key never reaches the browser.
+// maxDuration extends Vercel's function timeout for large report generation.
 
 import Anthropic from '@anthropic-ai/sdk';
 import jwt from 'jsonwebtoken';
+
+// Extend Vercel serverless timeout to 60 seconds
+// Required for the 20-section Ikigai report generation (can take 20-40s)
+export const maxDuration = 60;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,12 +28,10 @@ export default async function handler(req, res) {
     }
   }
 
-  // Check key exists
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
       error: 'ANTHROPIC_API_KEY missing from .env.local',
-      fix: 'Add ANTHROPIC_API_KEY=sk-ant-... to your .env.local file, then restart npm run dev',
     });
   }
 
@@ -45,7 +48,6 @@ export default async function handler(req, res) {
     });
     return res.status(200).json(response);
   } catch (err) {
-    // Return the REAL Anthropic error so you can see exactly what's wrong
     console.error('[api/chat] Error:', err?.message, err?.status);
     return res.status(500).json({
       error: err?.message || 'Anthropic API call failed',
