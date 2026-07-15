@@ -499,48 +499,7 @@ const Payment = ({ onSuccess, onBack }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, token: chatToken, whisperFn }) => {
-  const [lang, setLang]       = useState('en');
-  const [sttState, setSttState] = useState('idle');
-  const [sttMsg, setSttMsg]   = useState('');
-  const mediaRecRef = useRef(null);
-  const audioChunks = useRef([]);
-
-  useEffect(()=>{ return()=>{ if(mediaRecRef.current?.state==='recording') mediaRecRef.current.stop(); }; },[]);
-
-  const startRec = useCallback(async()=>{
-    setSttMsg(''); setSttState('idle');
-    let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio:true }); }
-    catch { setSttState('error'); setSttMsg('Microphone access denied.'); return; }
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
-    const rec  = new MediaRecorder(stream,{mimeType:mime});
-    audioChunks.current = [];
-    rec.ondataavailable = e=>{ if(e.data.size>0) audioChunks.current.push(e.data); };
-    rec.onstop = async ()=>{
-      stream.getTracks().forEach(t=>t.stop());
-      if (!whisperFn) {
-        setSttState('error');
-        setSttMsg('Whisper works in production only. Type your answer for now.');
-        setTimeout(()=>{ setSttState('idle'); setSttMsg(''); },4000);
-        return;
-      }
-      setSttState('transcribing');
-      try {
-        const blob = new Blob(audioChunks.current, { type: mime });
-        const text = await whisperFn(blob, lang, chatToken);
-        if (text?.trim()) setInput(prev => (prev ? prev + ' ' : '') + text.trim());
-        else setSttMsg('No speech detected. Try again.');
-      } catch (err) {
-        setSttState('error');
-        setSttMsg(err.message || 'Transcription failed. Try again.');
-      } finally { setSttState('idle'); }
-    };
-    mediaRecRef.current = rec; rec.start(); setSttState('recording');
-  },[]);
-
-  const stopRec  = useCallback(()=>{ if(mediaRecRef.current?.state==='recording') mediaRecRef.current.stop(); },[]);
-  const toggleMic = ()=>{ if(sttState==='recording') stopRec(); else startRec(); };
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
   const progress = Math.min((answerCount/17)*100,95);
@@ -617,39 +576,16 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
 
         {/* Input */}
         <div style={{ borderTop:`1px solid ${G.brd}`, padding:'14px 24px', background:G.surf }}>
-          {sttState==='recording' && (
-            <div className="recording-pulse" style={{ background:'#2a0a0a', border:`1px solid ${G.red}40`, borderRadius:8, padding:'8px 12px', marginBottom:8, fontSize:13, color:G.red, display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ width:8, height:8, borderRadius:'50%', background:G.red, display:'inline-block' }}/>
-              Recording in {lang==='fil'?'Filipino':'English'} — click ⏹ to stop
-            </div>
-          )}
-          {sttState==='error' && sttMsg && (
-            <div style={{ background:'#2a0a14', border:`1px solid ${G.coral}30`, borderRadius:8, padding:'8px 12px', marginBottom:8, fontSize:12, color:G.coral }}>{sttMsg}</div>
-          )}
           <div className="ikigai-chat-input-row" style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
             <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={handleKey}
-              placeholder={sttState==='recording'?(lang==='fil'?'Magsalita ngayon...':'Speak now...'):(lang==='fil'?'Mag-type o gamitin ang mic...':'Type or use the mic to answer...')}
+              placeholder="Type your answer here..."
               rows={2}
-              style={{ flex:1, background:sttState==='recording'?'#1a0a0a':G.surf2, border:`1px solid ${sttState==='recording'?G.red+'50':G.brd}`, borderRadius:10, padding:'10px 14px', color:G.cream, fontSize:14, resize:'none', fontFamily:G.sans, outline:'none', lineHeight:1.5, transition:'all .2s' }}
+              style={{ flex:1, background:G.surf2, border:`1px solid ${G.brd}`, borderRadius:10, padding:'10px 14px', color:G.cream, fontSize:14, resize:'none', fontFamily:G.sans, outline:'none', lineHeight:1.5 }}
             />
-            <div className="ikigai-lang-toggle" style={{ display:'flex', flexDirection:'column', gap:4, flexShrink:0 }}>
-              {['en','fil'].map(l=>(
-                <button key={l} onClick={()=>setLang(l)} style={{ background:lang===l?G.gold:G.surf2, color:lang===l?G.bg:G.muted, border:`1px solid ${lang===l?G.gold:G.brd}`, borderRadius:6, padding:'4px 8px', fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:G.sans, letterSpacing:'.5px' }}>
-                  {l==='en'?'EN':'FIL'}
-                </button>
-              ))}
-            </div>
-            <button onClick={toggleMic} title={sttState==='recording'?'Stop':'Speak'}
-              style={{ background:sttState==='recording'?'#6b0f0f':G.surf2, border:`1.5px solid ${sttState==='recording'?G.red:G.brd}`, borderRadius:10, width:42, height:42, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:sttState==='recording'?13:16 }}>
-              {sttState==='recording'?'⏹':'🎙'}
-            </button>
             <button onClick={onSend} disabled={isLoading||!input.trim()}
               style={{ background:isLoading||!input.trim()?G.brd:G.gold, color:isLoading||!input.trim()?G.muted:G.bg, border:'none', borderRadius:10, width:42, height:42, cursor:isLoading||!input.trim()?'not-allowed':'pointer', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:700 }}>↑</button>
           </div>
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:7 }}>
-            <p style={{ fontSize:11, color:G.muted, margin:0 }}>Enter to send · Shift+Enter for new line</p>
-            <p style={{ fontSize:11, color:G.muted, margin:0 }}>🎙 {lang==='fil'?'Filipino':'English'}</p>
-          </div>
+          <p style={{ fontSize:11, color:G.muted, marginTop:7 }}>Enter to send · Shift+Enter for new line</p>
         </div>
       </div>
     </div>
@@ -1117,7 +1053,6 @@ export default function App() {
   const handleResume = () => { if (!resumeData) return; setMessages(resumeData.messages); setAnswerCount(resumeData.answerCount); setResumeData(null); setView('chat'); };
   const handleDismissResume = () => { clearChat(); setResumeData(null); };
 
-  const whisperFn = DEMO_MODE ? null : apiWhisper;
 
   if (view === 'report') {
     return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} />;
@@ -1134,7 +1069,6 @@ export default function App() {
         answerCount={answerCount}
         endRef={endRef}
         token={accessToken || getToken()}
-        whisperFn={whisperFn}
       />
     );
   }
