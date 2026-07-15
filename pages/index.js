@@ -255,6 +255,18 @@ const apiVerifyPayment = async (sessionId) => {
   return d; // { token, verified }
 };
 
+// Send report via email + return HTML for download
+const apiSendReport = async (reportData, token) => {
+  try {
+    const res = await fetch('/api/send-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+      body: JSON.stringify({ reportData }),
+    });
+    return await res.json();
+  } catch (err) { return { ok: false, emailError: err?.message }; }
+};
+
 const PetalMark = ({ size = 36, animated = false }) => (
   <svg viewBox="0 0 60 60" width={size} height={size}
     className={animated ? 'petal-breathe' : ''} aria-hidden="true"
@@ -326,6 +338,22 @@ const Dots = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  LANDING VIEW
 // ─────────────────────────────────────────────────────────────────────────────
+const ResumeBanner = ({ answerCount, onResume, onRestart }) => (
+  <div style={{ position:'fixed', top:0, left:0, right:0, zIndex:999, background:'var(--surf)', borderBottom:'1px solid var(--gold)', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
+    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+      <PetalMark size={22}/>
+      <div>
+        <p style={{ fontSize:13, fontWeight:600, color:'var(--cream)', fontFamily:'var(--sans)' }}>You have an unfinished session</p>
+        <p style={{ fontSize:11, color:'var(--muted)', fontFamily:'var(--sans)' }}>{answerCount} of 16 questions answered — resume where you left off</p>
+      </div>
+    </div>
+    <div style={{ display:'flex', gap:8 }}>
+      <button onClick={onRestart} style={{ background:'transparent', border:'1px solid var(--brd)', borderRadius:8, padding:'6px 12px', color:'var(--muted)', fontSize:12, cursor:'pointer', fontFamily:'var(--sans)' }}>Start fresh</button>
+      <button onClick={onResume}  style={{ background:'var(--gold)', border:'none', borderRadius:8, padding:'7px 18px', color:'var(--bg)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--sans)' }}>Resume →</button>
+    </div>
+  </div>
+);
+
 const Landing = ({ onStart, isVerifying = false }) => (
   <div style={{ background:G.bg, minHeight:'100vh', fontFamily:G.serif, color:G.cream, overflowX:'hidden' }}>
     {/* Header */}
@@ -606,7 +634,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
 // ─────────────────────────────────────────────────────────────────────────────
 //  REPORT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const Report = ({ data, onRestart }) => {
+const Report = ({ data, onRestart, emailSent = false, token = null }) => {
   if (!data) return (
     <div style={{ background:G.bg, height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:G.cream, fontFamily:G.serif }}>
       <div style={{ textAlign:'center' }}>
@@ -859,8 +887,22 @@ const Report = ({ data, onRestart }) => {
         {/* Footer */}
         <div style={{ textAlign:'center', padding:'52px 0 28px', borderTop:`1px solid ${G.brd}` }}>
           <div style={{ display:'flex', justifyContent:'center', marginBottom:14 }}><PetalMark size={40} animated/></div>
-          <p style={{ fontSize:14, color:G.muted, fontStyle:'italic', fontFamily:G.serif, marginBottom:20 }}>Your Ikigai is your compass. When in doubt, return to this page.</p>
-          <button data-no-print="true" onClick={()=>window.print()} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:9, padding:'12px 30px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:G.sans }}>Save as PDF</button>
+          <p style={{ fontSize:14, color:G.muted, fontStyle:'italic', fontFamily:G.serif, marginBottom:20 }}>Your purpose is your compass. When in doubt, return to this page.</p>
+          {emailSent && (
+            <div style={{ background:G.surf, border:`1px solid ${G.sage}`, borderRadius:10, padding:'10px 18px', marginBottom:16, fontSize:13, color:G.sage, fontFamily:G.sans }}>
+              ✅ Your report was sent to your email — check your inbox
+            </div>
+          )}
+          <div data-no-print="true" style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+            <button onClick={()=>window.print()} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:9, padding:'12px 30px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:G.sans }}>Save as PDF</button>
+            <button onClick={()=>{
+              if (!token) return;
+              fetch('/api/send-report',{ method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body:JSON.stringify({reportData:data}) })
+                .then(r=>r.json()).then(d=>{ if(d.html){ const b=new Blob([d.html],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='ikigai-purpose-report.html'; a.click(); }});
+            }} style={{ background:G.surf, color:G.cream, border:`1px solid ${G.brd}`, borderRadius:9, padding:'12px 22px', fontSize:14, fontWeight:500, cursor:'pointer', fontFamily:G.sans }}>
+              ⬇ Download HTML
+            </button>
+          </div>
         </div>
         <div className="print-watermark">Ikigai Journey · Filipino Edition · Generated for personal use only</div>
       </div>
@@ -893,6 +935,8 @@ export default function App() {
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
   const [isVerifying,  setIsVerifying]  = useState(false);
+  const [resumeData,   setResumeData]   = useState(null);
+  const [emailSent,    setEmailSent]    = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -921,6 +965,8 @@ export default function App() {
       }
     } else if (existing) {
       setAccessToken(existing);
+      const saved = loadChat();
+      if (saved && saved.messages && saved.messages.length > 1) setResumeData(saved);
     }
   }, []);
 
@@ -1020,6 +1066,9 @@ export default function App() {
             setReportData(json);
             const pre = text.split('IKIGAI_REPORT_START')[0].trim();
             if (pre) setMessages(prev => [...prev, { role: 'assistant', content: pre }]);
+            clearChat();
+            const tok = accessToken || getToken();
+            apiSendReport(json, tok).then(r => { if (r.emailSent) setEmailSent(true); console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError); });
             setTimeout(() => setView('report'), 1500);
           } catch {
             setMessages(prev => [...prev, { role: 'assistant', content: text }]);
@@ -1038,8 +1087,11 @@ export default function App() {
     }
   };
 
+  useEffect(() => { if (messages.length > 1) saveChat(messages, answerCount); }, [messages, answerCount]);
+
   const reset = () => {
     if (!DEMO_MODE) clearToken();
+    clearChat(); setResumeData(null); setEmailSent(false);
     setAccessToken(null);
     setView('landing');
     setMessages([]);
@@ -1048,10 +1100,13 @@ export default function App() {
   };
 
   // Production Whisper function — only passed to ChatView when not in demo mode
+  const handleResume = () => { if (!resumeData) return; setMessages(resumeData.messages); setAnswerCount(resumeData.answerCount); setResumeData(null); setView('chat'); };
+  const handleDismissResume = () => { clearChat(); setResumeData(null); };
+
   const whisperFn = DEMO_MODE ? null : apiWhisper;
 
   if (view === 'report') {
-    return <Report data={reportData} onRestart={reset} />;
+    return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} />;
   }
 
   if (view === 'chat') {
@@ -1070,5 +1125,8 @@ export default function App() {
     );
   }
 
-  return <Landing onStart={handleStart} isVerifying={isVerifying} />;
+  return (<>
+    {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
+    <Landing onStart={handleStart} isVerifying={isVerifying}/>
+  </>);
 }
