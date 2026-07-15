@@ -9,7 +9,7 @@
 //   • Calls Anthropic API directly (no /api/chat proxy)
 //   • Payment is skipped — goes straight to chat
 //   • Whisper shows a "production only" message
-//   • No sessionStorage token needed
+//   • No localStorage token needed
 //
 // With DEMO_MODE = false:
 //   • All API calls route through /api/* (keys never in browser)
@@ -190,12 +190,12 @@ textarea:focus{border-color:var(--gold)!important;outline:none;box-shadow:0 0 0 
 }
 `;
 
-// ── Token helpers (sessionStorage) ───────────────────────────────────────────
+// ── Token helpers (localStorage) ───────────────────────────────────────────
 // getToken / saveToken / clearToken only matter when DEMO_MODE = false.
 const TOKEN_KEY  = 'ikigai_access_token';
-const getToken   = () => { try { return sessionStorage.getItem(TOKEN_KEY); }  catch { return null; } };
-const saveToken  = (t) => { try { sessionStorage.setItem(TOKEN_KEY, t); }     catch { } };
-const clearToken = ()  => { try { sessionStorage.removeItem(TOKEN_KEY); }     catch { } };
+const getToken   = () => { try { return localStorage.getItem(TOKEN_KEY); }  catch { return null; } };
+const saveToken  = (t) => { try { localStorage.setItem(TOKEN_KEY, t); }     catch { } };
+const clearToken = ()  => { try { localStorage.removeItem(TOKEN_KEY); }     catch { } };
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
@@ -946,7 +946,7 @@ export default function App() {
   // On mount: handle PayMongo redirect (?paid=true) or restore existing token.
   // IMPORTANT: PayMongo's success_url placeholder substitution is unreliable,
   // so we DON'T rely on it injecting the real session ID into the URL.
-  // Instead, the sessionId is saved to sessionStorage right before redirecting
+  // Instead, the sessionId is saved to localStorage right before redirecting
   // to checkout (see handleStart below), and read back here on return.
   useEffect(() => {
     if (DEMO_MODE) return; // Skip token logic entirely in demo mode
@@ -956,9 +956,9 @@ export default function App() {
 
     if (paid === 'true') {
       window.history.replaceState({}, '', window.location.pathname);
-      const pendingSession = sessionStorage.getItem('ikigai_pending_session');
+      const pendingSession = localStorage.getItem('ikigai_pending_session');
       if (pendingSession) {
-        sessionStorage.removeItem('ikigai_pending_session');
+        localStorage.removeItem('ikigai_pending_session');
         verifyAndUnlock(pendingSession);
       } else {
         alert('Could not find your payment session. Contact support if you were charged.');
@@ -1010,7 +1010,7 @@ export default function App() {
       const { checkoutUrl, sessionId } = await apiCreateCheckout();
       // Save sessionId locally BEFORE redirecting — PayMongo's URL placeholder
       // substitution is unreliable, so we don't depend on it.
-      sessionStorage.setItem('ikigai_pending_session', sessionId);
+      localStorage.setItem('ikigai_pending_session', sessionId);
       window.location.href = checkoutUrl;
     } catch (err) {
       alert('Could not start payment: ' + err.message);
