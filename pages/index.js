@@ -197,6 +197,35 @@ const getToken   = () => { try { return localStorage.getItem(TOKEN_KEY); }  catc
 const saveToken  = (t) => { try { localStorage.setItem(TOKEN_KEY, t); }     catch { } };
 const clearToken = ()  => { try { localStorage.removeItem(TOKEN_KEY); }     catch { } };
 
+// ── Conversation persistence (localStorage survives tab close) ────────────────
+const CHAT_KEY  = 'ikigai_chat_messages';
+const COUNT_KEY = 'ikigai_chat_count';
+
+const saveChat = (msgs, count) => {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(CHAT_KEY,  JSON.stringify(msgs));
+    localStorage.setItem(COUNT_KEY, String(count));
+  } catch {}
+};
+
+const loadChat = () => {
+  try {
+    if (typeof window === 'undefined') return null;
+    const msgs  = localStorage.getItem(CHAT_KEY);
+    const count = localStorage.getItem(COUNT_KEY);
+    return msgs ? { messages: JSON.parse(msgs), answerCount: parseInt(count || '0') } : null;
+  } catch { return null; }
+};
+
+const clearChat = () => {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(CHAT_KEY);
+    localStorage.removeItem(COUNT_KEY);
+  } catch {}
+};
+
 // ── API helpers ───────────────────────────────────────────────────────────────
 
 // Chat: always routes through /api/chat (server-side proxy).
