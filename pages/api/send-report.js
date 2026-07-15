@@ -184,15 +184,7 @@ function generateReportHTML(data, email) {
     ${(p.actions || []).map(a => `<p style="font-size:13px;color:#c0b8d4;margin:4px 0;padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:#6aaa92;">→</span>${safe(a)}</p>`).join('')}
   `, '#6aaa92')).join(''))}
 
-  ${sec('Your 3 AI Employees', '#9d91d4', `
-    <div class="grid3">
-      ${(data.ai_employees || []).map(e => card(`
-        ${lbl(safe(e.role), '#9d91d4')}
-        <p style="font-size:12px;color:#f2ede2;margin-bottom:8px;">${safe(e.outcome)}</p>
-        <p style="font-size:11px;color:#857da0;font-style:italic;">${safe(e.alignment)}</p>
-      `, '#9d91d4')).join('')}
-    </div>
-  `)}
+
 
   ${sec('Your 5-Person Orbit', '#f0a732', [['The Mentor',data.orbit_mentor,'#f0a732'],['The Peer',data.orbit_peer,'#9d91d4'],['The Hire',data.orbit_hire,'#6aaa92'],['The Partner',data.orbit_partner,'#d96b55'],['The Audience',data.orbit_audience,'#c0b8d4']].map(([l,v,c]) => `
     <div class="orbit-row">

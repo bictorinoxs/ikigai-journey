@@ -44,7 +44,7 @@ ABSOLUTE RULES:
 • 1-word answer → "Tell me more — what does [word] look like specifically?"
 • "I don't know" → rephrase smaller
 
-FLOW: Ask their first name. Briefly explain the 4-section, 16-question journey and that they'll get a 20-section personal report. Then begin Q1.
+FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
 
 SECTION 1 — WHAT YOU LOVE (Q1–Q4):
 Q1: What did you do as a kid for hours without anyone paying you? Be specific.
@@ -109,11 +109,7 @@ IKIGAI_REPORT_START
   "path1":{"name":"Highest Probability","projection":"P XX,XXX/month est.","actions":["a1","a2","a3"]},
   "path2":{"name":"Highest Ceiling","projection":"P XX,XXX/month est.","actions":["a1","a2","a3"]},
   "path3":{"name":"Most Aligned","projection":"P XX,XXX/month est.","actions":["a1","a2","a3"]},
-  "ai_employees":[
-    {"role":"AI [Role] Employee","outcome":"What it produces","alignment":"Why it fits their Ikigai"},
-    {"role":"AI [Role] Employee","outcome":"What it produces","alignment":"Why it fits"},
-    {"role":"AI [Role] Employee","outcome":"What it produces","alignment":"Why it fits"}
-  ],
+
   "orbit_mentor":"2 sentences on who to learn from",
   "orbit_peer":"2 sentences on who walks beside them",
   "orbit_hire":"2 sentences on first hire archetype",
@@ -593,7 +589,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           );
         })}
         <div style={{ marginTop:'auto', fontSize:10, color:G.muted, lineHeight:1.65 }}>
-          Specificity makes your report powerful. Answer honestly.
+          Answer from the heart — not what sounds good. The more specific and honest you are, the more powerful your report.
         </div>
       </div>
 
@@ -824,17 +820,6 @@ const Report = ({ data, onRestart, emailSent = false, token = null }) => {
           ))}
         </Sec>
 
-        <Sec title="Your 3 AI Employees" accent={G.lav} pageBreak>
-          <div className="print-stack ikigai-report-grid-3" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
-            {(data.ai_employees||[]).map((e,i)=>(
-              <Card key={i} accent={G.lav}>
-                <Lbl text={e.role} c={G.lav}/>
-                <p style={{ fontSize:12, color:G.cream, marginBottom:8 }}>{e.outcome}</p>
-                <p style={{ fontSize:11, color:G.muted, fontStyle:'italic', margin:0 }}>{e.alignment}</p>
-              </Card>
-            ))}
-          </div>
-        </Sec>
 
         <Sec title="Your 5-Person Orbit" accent={G.gold}>
           {[['The Mentor',data.orbit_mentor,G.gold],['The Peer',data.orbit_peer,G.lav],['The Hire',data.orbit_hire,G.sage],['The Partner',data.orbit_partner,G.coral],['The Audience',data.orbit_audience,G.soft]].map(([l,v,c],i)=>(
