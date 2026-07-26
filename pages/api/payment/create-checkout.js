@@ -1,7 +1,7 @@
 // pages/api/payment/create-checkout.js
-// Creates a PayMongo checkout session and returns the redirect URL + session ID.
-// success_url does NOT rely on PayMongo's placeholder substitution (unreliable).
-// Instead, the frontend stores sessionId locally before redirecting.
+// Creates a PayMongo checkout session and returns the redirect URL.
+// Payment method: QR Ph (InstaPay-enabled banks: BPI, BDO, UnionBank, etc.)
+// Add 'gcash', 'paymaya', 'card' to the array once PayMongo approves them.
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,23 +25,30 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         data: {
           attributes: {
-            payment_method_types: ['gcash', 'paymaya', 'card', 'dob'],
+            // ── Active payment methods ────────────────────────────────────────
+            // QR Ph: works with BPI, BDO, UnionBank, and all InstaPay banks
+            // Add 'gcash', 'paymaya', 'card' once PayMongo approves them
+            payment_method_types: ['qrph'],
+
             line_items: [
               {
                 currency: 'PHP',
-                amount: 50000,
-                name: 'Ikigai Journey',
-                description: 'Your personal 20-section Ikigai report.',
+                amount: 39900,          // ₱399 in centavos
+                name: 'Ikigai Journey — Discover Your Purpose',
+                description: 'Your personal 20-section purpose report — AI-guided, specific to your answers.',
                 quantity: 1,
               },
             ],
-            // Fixed URL — no placeholder. We already have sessionId in the response below.
+
+            // success_url uses fixed string — session ID is saved to
+            // localStorage before redirect (see index.js handleStart)
             success_url: BASE + '/?paid=true',
             cancel_url:  BASE + '/?cancelled=true',
+
             send_email_receipt: true,
             show_description:   true,
             show_line_items:    true,
-            description: 'Ikigai Journey — Self-Discovery Report',
+            description: 'Ikigai Journey — Discover Your Purpose',
           },
         },
       }),
@@ -54,8 +61,6 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Could not create checkout session. Try again.' });
     }
 
-    // Return BOTH the checkout URL and the session ID.
-    // Frontend will save sessionId to sessionStorage BEFORE redirecting.
     return res.status(200).json({
       checkoutUrl: data.data.attributes.checkout_url,
       sessionId:   data.data.id,
