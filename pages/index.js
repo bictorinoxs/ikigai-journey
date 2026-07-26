@@ -409,9 +409,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
           Discover Your<br/><em style={{ color:G.gold }}>Purpose</em>
         </h1>
         <p style={{ fontSize:16, lineHeight:1.85, color:G.soft, marginBottom:32, fontFamily:G.sans, fontWeight:300, maxWidth:420 }}>
-          A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for.
+          A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for — completed in just 15 to 20 minutes.
         </p>
-        <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans }}>GCash · Maya · Credit/Debit Card · ~15–20 min</p>
       </div>
       <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:300 }}><IkigaiDiagram/></div>
     </div>
@@ -453,7 +452,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
         {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱399'}
       </button>
-      <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · One-time · No subscription</p>
+      <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · GCash · Maya · Credit/Debit Card</p>
+      <p style={{ fontSize:11, color:G.muted, marginTop:6, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
     </div>
   </div>
 );
