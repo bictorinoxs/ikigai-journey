@@ -327,12 +327,12 @@ const IkigaiDiagram = () => (
       <circle  cx="180" cy="182" r="7"   fill="var(--gold)"/>
       <circle  cx="180" cy="182" r="2.5" fill="var(--bg)" fillOpacity=".45"/>
     </g>
-    <text x="180" y="28"  textAnchor="middle" fill="var(--gold)"  fontSize="11" fontFamily="var(--serif)">What You Love</text>
-    <text x="27"  y="238" textAnchor="middle" fill="var(--lav)"   fontSize="9.5" fontFamily="var(--serif)">What You're</text>
-    <text x="27"  y="252" textAnchor="middle" fill="var(--lav)"   fontSize="9.5" fontFamily="var(--serif)">Good At</text>
-    <text x="333" y="238" textAnchor="middle" fill="var(--coral)" fontSize="9.5" fontFamily="var(--serif)">What the</text>
-    <text x="333" y="252" textAnchor="middle" fill="var(--coral)" fontSize="9.5" fontFamily="var(--serif)">World Needs</text>
-    <text x="180" y="322" textAnchor="middle" fill="var(--sage)"  fontSize="9.5" fontFamily="var(--serif)">What You Can Be Paid For</text>
+    <text x="180" y="26"  textAnchor="middle" fill="var(--gold)"  fontSize="14" fontFamily="var(--serif)" fontWeight="600">What You Love</text>
+    <text x="22"  y="236" textAnchor="middle" fill="var(--lav)"   fontSize="12" fontFamily="var(--serif)" fontWeight="600">What You're</text>
+    <text x="22"  y="252" textAnchor="middle" fill="var(--lav)"   fontSize="12" fontFamily="var(--serif)" fontWeight="600">Good At</text>
+    <text x="338" y="236" textAnchor="middle" fill="var(--coral)" fontSize="12" fontFamily="var(--serif)" fontWeight="600">What the</text>
+    <text x="338" y="252" textAnchor="middle" fill="var(--coral)" fontSize="12" fontFamily="var(--serif)" fontWeight="600">World Needs</text>
+    <text x="180" y="325" textAnchor="middle" fill="var(--sage)"  fontSize="13" fontFamily="var(--serif)" fontWeight="600">What You Can Be Paid For</text>
   </svg>
 );
 
@@ -411,9 +411,6 @@ const Landing = ({ onStart, isVerifying = false }) => (
         <p style={{ fontSize:16, lineHeight:1.85, color:G.soft, marginBottom:32, fontFamily:G.sans, fontWeight:300, maxWidth:420 }}>
           A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for.
         </p>
-        <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'14px 32px', fontSize:15, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, marginBottom:14 }}>
-          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱399'}
-        </button>
         <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans }}>GCash · Maya · Credit/Debit Card · ~15–20 min</p>
       </div>
       <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:300 }}><IkigaiDiagram/></div>
@@ -453,8 +450,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
         <span style={{ fontSize:12, color:G.gold, fontFamily:G.sans, fontWeight:600, letterSpacing:'0.5px' }}>🔥 Limited Time Offer</span>
       </div>
       <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
-      <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'15px 44px', fontSize:16, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans }}>
-        {isVerifying ? 'Verifying...' : 'Start Now'}
+      <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
+        {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱399'}
       </button>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · One-time · No subscription</p>
     </div>
