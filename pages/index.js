@@ -44,7 +44,7 @@ ABSOLUTE RULES:
 • 1-word answer → "Tell me more — what does [word] look like specifically?"
 • "I don't know" → rephrase smaller
 
-FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
+FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Let them know that each of your responses may take 30 seconds to 1 minute as you carefully reflect on their answers — this is intentional, not a glitch. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
 
 SECTION 1 — WHAT YOU LOVE (Q1–Q4):
 Q1: What did you do as a kid for hours without anyone paying you? Be specific.
@@ -354,11 +354,16 @@ const Msg = ({ text, isUser }) => {
   );
 };
 
-const Dots = () => {
-  const [n,setN] = useState(0);
-  useEffect(()=>{ const t=setInterval(()=>setN(x=>(x+1)%4),420); return()=>clearInterval(t); },[]);
-  return <span style={{ color:G.gold, fontSize:14, fontFamily:G.sans }}>{'Thinking'+'.'.repeat(n)}</span>;
-};
+const Dots = () => (
+  <svg viewBox="0 0 60 60" width="32" height="32" className="petal-spin-slow" aria-label="Thinking..." style={{ display:'block' }}>
+    <ellipse cx="30" cy="18" rx="9"  ry="15" fill="var(--gold)"  fillOpacity=".65"/>
+    <ellipse cx="42" cy="30" rx="15" ry="9"  fill="var(--coral)" fillOpacity=".65"/>
+    <ellipse cx="30" cy="42" rx="9"  ry="15" fill="var(--sage)"  fillOpacity=".65"/>
+    <ellipse cx="18" cy="30" rx="15" ry="9"  fill="var(--lav)"   fillOpacity=".65"/>
+    <circle  cx="30" cy="30" r="5.5" fill="var(--gold)"/>
+    <circle  cx="30" cy="30" r="2"   fill="var(--bg)" fillOpacity=".45"/>
+  </svg>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  LANDING VIEW
@@ -407,7 +412,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
           A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for.
         </p>
         <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'14px 32px', fontSize:15, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, marginBottom:14 }}>
-          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱500'}
+          {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱399'}
         </button>
         <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans }}>GCash · Maya · Credit/Debit Card · ~15–20 min</p>
       </div>
@@ -440,7 +445,13 @@ const Landing = ({ onStart, isVerifying = false }) => (
     {/* Bottom CTA */}
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
-      <p style={{ fontSize:30, fontWeight:700, marginBottom:8 }}>₱500</p>
+      <div style={{ marginBottom:8 }}>
+        <span style={{ fontSize:18, color:G.muted, fontFamily:G.serif, textDecoration:'line-through', marginRight:10 }}>₱600</span>
+        <span style={{ fontSize:34, fontWeight:700, color:G.gold }}>₱399</span>
+      </div>
+      <div style={{ display:'inline-block', background:'#2a1a08', border:`1px solid ${G.gold}50`, borderRadius:20, padding:'4px 14px', marginBottom:12 }}>
+        <span style={{ fontSize:12, color:G.gold, fontFamily:G.sans, fontWeight:600, letterSpacing:'0.5px' }}>🔥 Limited Time Offer</span>
+      </div>
       <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'15px 44px', fontSize:16, fontWeight:600, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans }}>
         {isVerifying ? 'Verifying...' : 'Start Now'}
@@ -468,7 +479,10 @@ const Payment = ({ onSuccess, onBack }) => {
             <p style={{ color:G.muted, fontSize:12 }}>Your 20-section personal report</p>
           </div>
           <div style={{ background:G.surf2, borderRadius:10, padding:'13px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
-            <div style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱500</div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
+              <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
+              <span style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
+            </div>
             <div style={{ fontSize:11, color:G.muted, marginTop:3 }}>One-time · Instant access</div>
           </div>
           <p style={{ fontSize:11, color:G.muted, marginBottom:10, textTransform:'uppercase', letterSpacing:'1.5px' }}>Payment method</p>
@@ -487,7 +501,7 @@ const Payment = ({ onSuccess, onBack }) => {
             </p>
           </div>
           <button onClick={pay} disabled={!method||loading} style={{ width:'100%', background:method?G.gold:G.brd, color:method?G.bg:G.muted, border:'none', borderRadius:10, padding:14, fontSize:15, fontWeight:600, cursor:method?'pointer':'not-allowed', fontFamily:G.sans }}>
-            {loading ? '⌛ Processing...' : 'Pay ₱500'}
+            {loading ? '⌛ Processing...' : 'Pay ₱399'}
           </button>
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:12 }}>🔒 Secured by PayMongo</p>
         </div>
@@ -564,11 +578,8 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
             </div>
           ))}
           {isLoading && (
-            <div style={{ display:'flex', justifyContent:'flex-start', alignItems:'flex-end', gap:10 }}>
-              <PetalMark size={20} animated/>
-              <div style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:'4px 16px 16px 16px', padding:'12px 16px' }}>
-                <Dots/>
-              </div>
+            <div style={{ display:'flex', justifyContent:'flex-start', alignItems:'center', gap:14 }}>
+              <Dots/>
             </div>
           )}
           <div ref={endRef}/>
