@@ -327,12 +327,12 @@ const IkigaiDiagram = () => (
       <circle  cx="180" cy="182" r="7"   fill="var(--gold)"/>
       <circle  cx="180" cy="182" r="2.5" fill="var(--bg)" fillOpacity=".45"/>
     </g>
-    <text x="180" y="26"  textAnchor="middle" fill="var(--gold)"  fontSize="14" fontFamily="var(--serif)" fontWeight="600">What You Love</text>
-    <text x="22"  y="236" textAnchor="middle" fill="var(--lav)"   fontSize="12" fontFamily="var(--serif)" fontWeight="600">What You're</text>
-    <text x="22"  y="252" textAnchor="middle" fill="var(--lav)"   fontSize="12" fontFamily="var(--serif)" fontWeight="600">Good At</text>
-    <text x="338" y="236" textAnchor="middle" fill="var(--coral)" fontSize="12" fontFamily="var(--serif)" fontWeight="600">What the</text>
-    <text x="338" y="252" textAnchor="middle" fill="var(--coral)" fontSize="12" fontFamily="var(--serif)" fontWeight="600">World Needs</text>
-    <text x="180" y="325" textAnchor="middle" fill="var(--sage)"  fontSize="13" fontFamily="var(--serif)" fontWeight="600">What You Can Be Paid For</text>
+    <text x="180" y="24"  textAnchor="middle" fill="var(--gold)"  fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
+    <text x="18"  y="232" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">What You're</text>
+    <text x="18"  y="250" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">Good At</text>
+    <text x="342" y="232" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">What the</text>
+    <text x="342" y="250" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
+    <text x="180" y="328" textAnchor="middle" fill="var(--sage)"  fontSize="15" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
   </svg>
 );
 
