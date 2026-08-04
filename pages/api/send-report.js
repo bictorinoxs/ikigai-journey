@@ -261,6 +261,21 @@ function generateReportHTML(data, email) {
     </svg>
     <p>Your purpose is your compass. When in doubt, return to this page.</p>
     ${email ? `<p style="font-size:12px;color:#857da0;margin-top:8px;font-family:'Inter',sans-serif;">Sent to ${email}</p>` : ''}
+
+    <div style="margin-top:28px;padding:24px;background:#15132a;border-radius:14px;border:1px solid #2d2952;">
+      <p style="font-size:15px;font-weight:600;color:#f2ede2;font-family:'Cormorant Garamond',Georgia,serif;margin-bottom:8px;">Enjoyed your journey? 🌸</p>
+      <p style="font-size:13px;color:#c0b8d4;font-family:'Inter',sans-serif;line-height:1.7;margin-bottom:18px;">
+        We'd love to hear how this report impacted you. Send us a message through our social media pages — your story might inspire others to discover their purpose too.
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="https://www.facebook.com/profile.php?id=61592202830156" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#1877f2;color:#fff;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif;">
+          📘 Message on Facebook
+        </a>
+        <a href="https://www.instagram.com/purposely.life/" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#e1306c;color:#fff;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif;">
+          📷 Message on Instagram
+        </a>
+      </div>
+    </div>
   </div>
 
 </div>
