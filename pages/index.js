@@ -462,45 +462,76 @@ const Landing = ({ onStart, isVerifying = false }) => (
 //  PAYMENT VIEW (simulated)
 // ─────────────────────────────────────────────────────────────────────────────
 const Payment = ({ onSuccess, onBack }) => {
-  const [method, setMethod] = useState(null);
   const [loading, setLoading] = useState(false);
-  const pay = () => { if(!method) return; setLoading(true); setTimeout(()=>{ setLoading(false); onSuccess(); },1800); };
+  const pay = () => { setLoading(true); setTimeout(()=>{ setLoading(false); onSuccess(); },1800); };
   return (
     <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:G.sans }}>
-      <div style={{ maxWidth:400, width:'100%' }}>
+      <div style={{ maxWidth:420, width:'100%' }}>
         <button onClick={onBack} style={{ background:'none', border:'none', color:G.muted, cursor:'pointer', marginBottom:20, fontSize:13 }}>← Back</button>
         <div className="ikigai-payment-card" style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:32 }}>
-          <div style={{ textAlign:'center', marginBottom:26 }}>
+
+          {/* Header */}
+          <div style={{ textAlign:'center', marginBottom:24 }}>
             <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><PetalMark size={44} animated/></div>
             <h2 style={{ color:G.cream, fontSize:20, fontWeight:700, marginBottom:4, fontFamily:G.serif }}>Ikigai Journey</h2>
-            <p style={{ color:G.muted, fontSize:12 }}>Your 20-section personal report</p>
+            <p style={{ color:G.muted, fontSize:12 }}>Discover Your Purpose — 20-Section Personal Report</p>
           </div>
-          <div style={{ background:G.surf2, borderRadius:10, padding:'13px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
+
+          {/* Price */}
+          <div style={{ background:G.surf2, borderRadius:10, padding:'14px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
             <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
               <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
-              <span style={{ fontSize:30, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
+              <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
             </div>
-            <div style={{ fontSize:11, color:G.muted, marginTop:3 }}>One-time · Instant access</div>
+            <div style={{ fontSize:11, color:G.muted, marginTop:4 }}>One-time · Instant access · No subscription</div>
           </div>
-          <p style={{ fontSize:11, color:G.muted, marginBottom:10, textTransform:'uppercase', letterSpacing:'1.5px' }}>Payment method</p>
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18 }}>
-            {[{id:'gcash',label:'GCash',dot:G.lav},{id:'maya',label:'Maya',dot:G.sage},{id:'card',label:'Credit / Debit Card',dot:G.muted}].map(m=>(
-              <div key={m.id} onClick={()=>setMethod(m.id)} style={{ background:method===m.id?G.surf2:'transparent', border:`1.5px solid ${method===m.id?G.gold:G.brd}`, borderRadius:10, padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:9, height:9, borderRadius:'50%', background:m.dot, flexShrink:0 }}/>
-                <span style={{ color:G.cream, fontSize:14, fontWeight:method===m.id?600:400 }}>{m.label}</span>
-                {method===m.id && <span style={{ marginLeft:'auto', color:G.gold }}>✓</span>}
-              </div>
+
+          {/* QR instruction */}
+          <div style={{ background:G.surf2, border:`1px solid ${G.gold}25`, borderRadius:12, padding:'16px 18px', marginBottom:20 }}>
+            <p style={{ fontSize:13, fontWeight:600, color:G.cream, marginBottom:8, fontFamily:G.sans }}>📱 How to pay:</p>
+            <ol style={{ paddingLeft:18, margin:0 }}>
+              {[
+                'Click the button below',
+                'A QR code will appear on the next page',
+                'Open GCash, Maya, BPI, BDO, or any banking app',
+                'Tap Scan QR or Pay QR and scan the code',
+                'Your journey unlocks automatically after payment',
+              ].map((step, i) => (
+                <li key={i} style={{ fontSize:12, color:G.soft, lineHeight:1.75, fontFamily:G.sans }}>{step}</li>
+              ))}
+            </ol>
+          </div>
+
+          {/* Supported apps */}
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:20, justifyContent:'center' }}>
+            {[
+              { label:'GCash', color:'#0070f3' },
+              { label:'Maya', color:'#00b4a0' },
+              { label:'BPI', color:'#c0392b' },
+              { label:'BDO', color:'#1a5276' },
+              { label:'UnionBank', color:'#f39c12' },
+              { label:'+ All InstaPay Banks', color:G.muted },
+            ].map((app, i) => (
+              <span key={i} style={{ fontSize:11, fontFamily:G.sans, color:G.cream, background:G.surf, border:`1px solid ${G.brd}`, borderRadius:20, padding:'3px 10px', display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:app.color, display:'inline-block', flexShrink:0 }}/>
+                {app.label}
+              </span>
             ))}
           </div>
-          <div style={{ background:G.surf2, borderRadius:8, padding:'10px 14px', marginBottom:16, border:`1px solid ${G.brd}` }}>
-            <p style={{ fontSize:11, color:G.muted, margin:0, lineHeight:1.6 }}>
-              <strong style={{ color:G.lav }}>Demo mode:</strong> Payment simulated. In production, this connects to your live PayMongo account.
-            </p>
-          </div>
-          <button onClick={pay} disabled={!method||loading} style={{ width:'100%', background:method?G.gold:G.brd, color:method?G.bg:G.muted, border:'none', borderRadius:10, padding:14, fontSize:15, fontWeight:600, cursor:method?'pointer':'not-allowed', fontFamily:G.sans }}>
-            {loading ? '⌛ Processing...' : 'Pay ₱399'}
+
+          {/* CTA */}
+          <button
+            onClick={pay}
+            disabled={loading}
+            style={{ width:'100%', background:loading?G.brd:G.gold, color:loading?G.muted:G.bg, border:'none', borderRadius:10, padding:'15px', fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', fontFamily:G.sans, transition:'all .2s' }}
+          >
+            {loading ? '⌛ Preparing your QR code...' : 'Continue to Payment — ₱399'}
           </button>
-          <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:12 }}>🔒 Secured by PayMongo</p>
+
+          <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:10, lineHeight:1.6, fontFamily:G.sans }}>
+            🔒 Secured by PayMongo · QR Ph / InstaPay<br/>
+            Keep this page open — it redirects automatically after payment.
+          </p>
         </div>
       </div>
     </div>
