@@ -176,18 +176,36 @@ textarea:focus, input:focus {
   .ikigai-hero-grid {
     grid-template-columns: 1fr !important;
     text-align: center;
-    gap: 32px !important;
+    gap: 24px !important;
   }
   .ikigai-hero-diagram {
-    width: 240px !important;
+    width: 100% !important;
+    max-width: 420px !important;
     margin: 0 auto;
     order: -1;
   }
   .ikigai-hero-text { max-width: 100% !important; }
 }
 
+@media (max-width: 640px) {
+  .ikigai-hero-diagram {
+    width: 100% !important;
+    max-width: 380px !important;
+  }
+}
+
 @media (max-width: 480px) {
-  .ikigai-hero-diagram { width: 190px !important; }
+  .ikigai-hero-diagram {
+    width: 100% !important;
+    max-width: 340px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .ikigai-hero-diagram {
+    width: 100% !important;
+    max-width: 300px !important;
+  }
 }
 
 /* ── Landing feature cards: 4-col → 2-col → 1-col ── */
