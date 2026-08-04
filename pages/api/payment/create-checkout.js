@@ -35,7 +35,7 @@ export default async function handler(req, res) {
                 currency: 'PHP',
                 amount: 39900,          // ₱399 in centavos
                 name: 'Ikigai Journey — Discover Your Purpose',
-                description: 'Your personal 20-section purpose report — AI-guided, specific to your answers.',
+                description: 'Your personal 20-section purpose report — deeply specific to your answers.',
                 quantity: 1,
               },
             ],
