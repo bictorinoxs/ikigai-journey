@@ -307,32 +307,32 @@ const PetalMark = ({ size = 36, animated = false }) => (
 
 // Large landing diagram with animated Petal Mark at center + rotating ring
 const IkigaiDiagram = () => (
-  <svg viewBox="-30 0 420 340" width="100%" style={{ maxWidth:420 }}>
+  <svg viewBox="-40 -10 480 390" width="100%" style={{ maxWidth:480 }}>
     <g className="petal-spin-slow" style={{ transformOrigin:'180px 170px' }}>
-      <circle cx="180" cy="170" r="158" fill="none" stroke="var(--gold)" strokeWidth=".5" strokeOpacity=".15" strokeDasharray="4 9"/>
+      <circle cx="180" cy="170" r="168" fill="none" stroke="var(--gold)" strokeWidth=".6" strokeOpacity=".18" strokeDasharray="4 9"/>
       {[0,45,90,135,180,225,270,315].map((deg,i)=>{
         const r=deg*Math.PI/180, x=180+158*Math.sin(r), y=170-158*Math.cos(r);
         return <circle key={i} cx={x} cy={y} r="2" fill="var(--gold)" fillOpacity=".28"/>;
       })}
     </g>
-    <circle cx="180" cy="118" r="95" fill="var(--gold)"  fillOpacity=".07" stroke="var(--gold)"  strokeWidth="1.2" strokeOpacity=".28"/>
-    <circle cx="118" cy="214" r="95" fill="var(--lav)"   fillOpacity=".07" stroke="var(--lav)"   strokeWidth="1.2" strokeOpacity=".28"/>
-    <circle cx="242" cy="214" r="95" fill="var(--coral)" fillOpacity=".07" stroke="var(--coral)" strokeWidth="1.2" strokeOpacity=".28"/>
-    <circle cx="180" cy="258" r="68" fill="var(--sage)"  fillOpacity=".05" stroke="var(--sage)"  strokeWidth="1"   strokeOpacity=".22"/>
+    <circle cx="180" cy="118" r="105" fill="var(--gold)"  fillOpacity=".08" stroke="var(--gold)"  strokeWidth="1.5" strokeOpacity=".35"/>
+    <circle cx="118" cy="214" r="105" fill="var(--lav)"   fillOpacity=".08" stroke="var(--lav)"   strokeWidth="1.5" strokeOpacity=".35"/>
+    <circle cx="242" cy="214" r="105" fill="var(--coral)" fillOpacity=".08" stroke="var(--coral)" strokeWidth="1.5" strokeOpacity=".35"/>
+    <circle cx="180" cy="258" r="78" fill="var(--sage)"  fillOpacity=".06" stroke="var(--sage)"  strokeWidth="1.2" strokeOpacity=".28"/>
     <g className="petal-breathe" style={{ transformOrigin:'180px 182px' }}>
-      <ellipse cx="180" cy="166" rx="11" ry="18" fill="var(--gold)"  fillOpacity=".65"/>
-      <ellipse cx="196" cy="182" rx="18" ry="11" fill="var(--coral)" fillOpacity=".65"/>
-      <ellipse cx="180" cy="198" rx="11" ry="18" fill="var(--sage)"  fillOpacity=".65"/>
-      <ellipse cx="164" cy="182" rx="18" ry="11" fill="var(--lav)"   fillOpacity=".65"/>
-      <circle  cx="180" cy="182" r="7"   fill="var(--gold)"/>
-      <circle  cx="180" cy="182" r="2.5" fill="var(--bg)" fillOpacity=".45"/>
+      <ellipse cx="180" cy="164" rx="14" ry="22" fill="var(--gold)"  fillOpacity=".7"/>
+      <ellipse cx="198" cy="182" rx="22" ry="14" fill="var(--coral)" fillOpacity=".7"/>
+      <ellipse cx="180" cy="200" rx="14" ry="22" fill="var(--sage)"  fillOpacity=".7"/>
+      <ellipse cx="162" cy="182" rx="22" ry="14" fill="var(--lav)"   fillOpacity=".7"/>
+      <circle  cx="180" cy="182" r="9"   fill="var(--gold)"/>
+      <circle  cx="180" cy="182" r="3.5" fill="var(--bg)" fillOpacity=".45"/>
     </g>
-    <text x="180" y="24"  textAnchor="middle" fill="var(--gold)"  fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
-    <text x="55"  y="232" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">What You're</text>
-    <text x="55"  y="250" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">Good At</text>
-    <text x="305" y="232" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">What the</text>
-    <text x="305" y="250" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
-    <text x="180" y="328" textAnchor="middle" fill="var(--sage)"  fontSize="15" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
+    <text x="180" y="20"  textAnchor="middle" fill="var(--gold)"  fontSize="19" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
+    <text x="50"  y="228" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You're</text>
+    <text x="50"  y="248" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">Good At</text>
+    <text x="310" y="228" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">What the</text>
+    <text x="310" y="248" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
+    <text x="180" y="334" textAnchor="middle" fill="var(--sage)"  fontSize="17" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
   </svg>
 );
 
@@ -412,7 +412,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
           A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for — completed in just 15 to 20 minutes.
         </p>
       </div>
-      <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:300 }}><IkigaiDiagram/></div>
+      <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:420 }}><IkigaiDiagram/></div>
     </div>
 
     {/* Features */}
