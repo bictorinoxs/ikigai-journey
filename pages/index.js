@@ -307,7 +307,7 @@ const PetalMark = ({ size = 36, animated = false }) => (
 
 // Large landing diagram with animated Petal Mark at center + rotating ring
 const IkigaiDiagram = () => (
-  <svg viewBox="-40 -10 480 390" width="100%" style={{ maxWidth:480 }}>
+  <svg viewBox="-40 -10 480 390" width="100%" style={{ maxWidth:480, display:'block', margin:'0 auto' }}>
     <g className="petal-spin-slow" style={{ transformOrigin:'180px 170px' }}>
       <circle cx="180" cy="170" r="168" fill="none" stroke="var(--gold)" strokeWidth=".6" strokeOpacity=".18" strokeDasharray="4 9"/>
       {[0,45,90,135,180,225,270,315].map((deg,i)=>{

@@ -177,20 +177,32 @@ textarea:focus, input:focus {
     grid-template-columns: 1fr !important;
     text-align: center;
     gap: 24px !important;
+    justify-items: center !important;
   }
   .ikigai-hero-diagram {
     width: 100% !important;
     max-width: 420px !important;
-    margin: 0 auto;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     order: -1;
   }
-  .ikigai-hero-text { max-width: 100% !important; }
+  .ikigai-hero-text {
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
 }
 
 @media (max-width: 640px) {
   .ikigai-hero-diagram {
     width: 100% !important;
     max-width: 380px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 }
 
@@ -198,6 +210,9 @@ textarea:focus, input:focus {
   .ikigai-hero-diagram {
     width: 100% !important;
     max-width: 340px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 }
 
@@ -205,6 +220,9 @@ textarea:focus, input:focus {
   .ikigai-hero-diagram {
     width: 100% !important;
     max-width: 300px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
   }
 }
 
