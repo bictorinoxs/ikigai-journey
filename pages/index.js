@@ -307,7 +307,7 @@ const PetalMark = ({ size = 36, animated = false }) => (
 
 // Large landing diagram with animated Petal Mark at center + rotating ring
 const IkigaiDiagram = () => (
-  <svg viewBox="0 0 360 340" width="100%" style={{ maxWidth:360 }}>
+  <svg viewBox="-30 0 420 340" width="100%" style={{ maxWidth:420 }}>
     <g className="petal-spin-slow" style={{ transformOrigin:'180px 170px' }}>
       <circle cx="180" cy="170" r="158" fill="none" stroke="var(--gold)" strokeWidth=".5" strokeOpacity=".15" strokeDasharray="4 9"/>
       {[0,45,90,135,180,225,270,315].map((deg,i)=>{
@@ -328,10 +328,10 @@ const IkigaiDiagram = () => (
       <circle  cx="180" cy="182" r="2.5" fill="var(--bg)" fillOpacity=".45"/>
     </g>
     <text x="180" y="24"  textAnchor="middle" fill="var(--gold)"  fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
-    <text x="18"  y="232" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">What You're</text>
-    <text x="18"  y="250" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">Good At</text>
-    <text x="342" y="232" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">What the</text>
-    <text x="342" y="250" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
+    <text x="55"  y="232" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">What You're</text>
+    <text x="55"  y="250" textAnchor="middle" fill="var(--lav)"   fontSize="14" fontFamily="var(--serif)" fontWeight="700">Good At</text>
+    <text x="305" y="232" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">What the</text>
+    <text x="305" y="250" textAnchor="middle" fill="var(--coral)" fontSize="14" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
     <text x="180" y="328" textAnchor="middle" fill="var(--sage)"  fontSize="15" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
   </svg>
 );
