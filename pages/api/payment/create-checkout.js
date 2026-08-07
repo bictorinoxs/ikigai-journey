@@ -30,6 +30,18 @@ export default async function handler(req, res) {
             // Add 'gcash', 'paymaya', 'card' once PayMongo approves them
             payment_method_types: ['qrph'],
 
+            // ── Force email collection ────────────────────────────────────────
+            // Required so we can send the report copy to the customer's email
+            billing_information_fields_editable: 'enabled',
+            collect_shipping: false,
+            customer_collection: {
+              enabled: true,
+              fields: {
+                email: { required: true },
+                name:  { required: true },
+              },
+            },
+
             line_items: [
               {
                 currency: 'PHP',
