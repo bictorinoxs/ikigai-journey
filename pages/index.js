@@ -368,18 +368,23 @@ const Dots = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 //  LANDING VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const ResumeBanner = ({ answerCount, onResume, onRestart }) => (
-  <div style={{ position:'fixed', top:0, left:0, right:0, zIndex:999, background:'var(--surf)', borderBottom:'1px solid var(--gold)', padding:'12px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-      <PetalMark size={22}/>
-      <div>
-        <p style={{ fontSize:13, fontWeight:600, color:'var(--cream)', fontFamily:'var(--sans)' }}>You have an unfinished session</p>
-        <p style={{ fontSize:11, color:'var(--muted)', fontFamily:'var(--sans)' }}>{answerCount} of 16 questions answered — resume where you left off</p>
-      </div>
-    </div>
-    <div style={{ display:'flex', gap:8 }}>
-      <button onClick={onRestart} style={{ background:'transparent', border:'1px solid var(--brd)', borderRadius:8, padding:'6px 12px', color:'var(--muted)', fontSize:12, cursor:'pointer', fontFamily:'var(--sans)' }}>Start fresh</button>
-      <button onClick={onResume}  style={{ background:'var(--gold)', border:'none', borderRadius:8, padding:'7px 18px', color:'var(--bg)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--sans)' }}>Resume →</button>
+const ResumeModal = ({ answerCount, onResume, onRestart }) => (
+  <div style={{ position:'fixed', inset:0, background:'rgba(14,12,30,0.85)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:24, backdropFilter:'blur(4px)' }}>
+    <div style={{ background:G.surf, border:`2px solid ${G.gold}`, borderRadius:20, padding:'36px 32px', maxWidth:380, width:'100%', textAlign:'center', boxShadow:'0 24px 80px rgba(0,0,0,0.5)' }}>
+      <div style={{ display:'flex', justifyContent:'center', marginBottom:18 }}><PetalMark size={52} animated/></div>
+      <h3 style={{ color:G.gold, fontSize:20, fontFamily:G.serif, fontWeight:700, marginBottom:10 }}>You have an unfinished session</h3>
+      <p style={{ color:G.soft, fontSize:14, fontFamily:G.sans, lineHeight:1.7, marginBottom:6 }}>
+        You answered <strong style={{color:G.cream}}>{answerCount} of 16 questions</strong>.
+      </p>
+      <p style={{ color:G.muted, fontSize:13, fontFamily:G.sans, lineHeight:1.6, marginBottom:28 }}>
+        Pick up right where you left off — your answers are all saved.
+      </p>
+      <button onClick={onResume} style={{ width:'100%', background:G.gold, border:'none', borderRadius:10, padding:'14px 24px', color:G.bg, fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:G.sans, marginBottom:10 }}>
+        Resume My Journey →
+      </button>
+      <button onClick={onRestart} style={{ width:'100%', background:'transparent', border:`1px solid ${G.brd}`, borderRadius:10, padding:'11px 24px', color:G.muted, fontSize:13, cursor:'pointer', fontFamily:G.sans }}>
+        Start Fresh Instead
+      </button>
     </div>
   </div>
 );
@@ -575,8 +580,16 @@ const Payment = ({ onSuccess, onBack }) => {
 const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
-  const progress = Math.min((answerCount/17)*100,95);
-  const qNum     = Math.max(0,answerCount-1);
+  // Progress: sectionsDone (detected from AI responses) is most accurate
+  // Falls back to message count estimate if section markers not yet detected
+  const progress = sectionsDone > 0
+    ? Math.min(sectionsDone * 25, 95)
+    : Math.min((Math.max(0, answerCount - 1) / 16) * 100, 95);
+
+  // qNum for dot coloring — sectionsDone * 4 = questions confirmed complete
+  const qNum = sectionsDone > 0
+    ? sectionsDone * 4
+    : Math.max(0, answerCount - 1);
   const sections = [
     { label:'What You Love',            range:[1,4],  color:G.gold  },
     { label:"What You're Good At",      range:[5,8],  color:G.lav   },
@@ -645,12 +658,15 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
         </div>
 
         {isGenerating && (
-          <div style={{ background:'#1a1000', borderTop:`2px solid ${G.gold}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:12 }}>
-            <Dots/>
-            <div>
-              <p style={{ fontSize:13, fontWeight:600, color:G.gold, fontFamily:G.sans, margin:0 }}>🌸 Crafting your personal report...</p>
-              <p style={{ fontSize:11, color:G.muted, fontFamily:G.sans, marginTop:2 }}>{generationMsg || 'Takes 30–60 seconds. Please keep this tab open.'}</p>
+          <div style={{ background:'#1a1000', borderTop:`2px solid ${G.gold}`, padding:'16px 22px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+              <Dots/>
+              <div>
+                <p style={{ fontSize:13, fontWeight:600, color:G.gold, fontFamily:G.sans, margin:0 }}>🌸 Crafting your personal purpose report...</p>
+                <p style={{ fontSize:11, color:G.muted, fontFamily:G.sans, marginTop:2 }}>{generationMsg || 'Takes 30–60 seconds. Do not close this tab — your results will also be sent to your email.'}</p>
+              </div>
             </div>
+            <GenProgressBar/>
           </div>
         )}
         {reportError && !isGenerating && (
@@ -1214,11 +1230,8 @@ export default function App() {
     const newCount = answerCount + 1;
     setAnswerCount(newCount);
     setIsLoading(true);
-    if (newCount >= 14) {
-      setIsGenerating(true);
-      setReportError(null);
-      setGenerationMsg('Your answers are being woven into your personal report. This takes 30–60 seconds — please keep this tab open.');
-    }
+    // Reset errors for new message
+    setReportError(null);
 
     try {
       const token    = accessToken || getToken();
@@ -1232,6 +1245,7 @@ export default function App() {
           try {
             const json = JSON.parse(match[1].trim());
             setReportData(json);
+            setIsGenerating(false); setReportError(null);
             const pre = text.split('IKIGAI_REPORT_START')[0].trim();
             if (pre) setMessages(prev => [...prev, { role: 'assistant', content: pre }]);
             clearChat();
@@ -1243,12 +1257,20 @@ export default function App() {
           }
         }
       } else {
+        // Detect if Claude is about to generate the report
+        const generatingKeywords = ['generating your', 'crafting your', 'synthesizing your', 'all 16 answers', 'petals are aligned', 'personal report now'];
+        if (generatingKeywords.some(k => text.toLowerCase().includes(k))) {
+          setIsGenerating(true);
+          setGenerationMsg('Your report is being crafted — this takes 30–60 seconds. Do not close this tab. Your results will also be sent to your email.');
+        }
         setMessages(prev => [...prev, { role: 'assistant', content: text }]);
       }
     } catch (err) {
+      setIsGenerating(false);
+      setReportError('Something went wrong. Your answers are saved — please try again.');
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Something went wrong. Please try again.'
+        content: 'Something went wrong. Your answers are saved — please try again.'
       }]);
     } finally {
       setIsLoading(false);
@@ -1299,10 +1321,13 @@ export default function App() {
 
   return (
     <>
-      {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
       {view === 'payment'
         ? <Payment onSuccess={handlePaymentContinue} onBack={() => setView('landing')}/>
-        : <Landing onStart={handleStart} isVerifying={isVerifying}/>}
+        : <>
+            {resumeData && <ResumeModal answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
+            <Landing onStart={handleStart} isVerifying={isVerifying}/>
+          </>
+      }
     </>
   );
 }
