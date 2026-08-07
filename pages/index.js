@@ -463,7 +463,22 @@ const Landing = ({ onStart, isVerifying = false }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 const Payment = ({ onSuccess, onBack }) => {
   const [loading, setLoading] = useState(false);
-  const pay = () => { setLoading(true); setTimeout(()=>{ setLoading(false); onSuccess(); },1800); };
+  const [email, setEmail]     = useState('');
+  const [emailErr, setEmailErr] = useState('');
+
+  const validateEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+  const pay = () => {
+    if (!validateEmail(email)) {
+      setEmailErr('Please enter a valid email address so we can send your report.');
+      return;
+    }
+    setEmailErr('');
+    // Save email to localStorage before redirecting
+    localStorage.setItem('ikigai_user_email', email);
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onSuccess(email); }, 1800);
+  };
   return (
     <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:G.sans }}>
       <div style={{ maxWidth:420, width:'100%' }}>
@@ -517,6 +532,22 @@ const Payment = ({ onSuccess, onBack }) => {
                 {app.label}
               </span>
             ))}
+          </div>
+
+          {/* Email input */}
+          <div style={{ marginBottom:16 }}>
+            <label style={{ display:'block', fontSize:12, color:G.muted, fontFamily:G.sans, marginBottom:6, textTransform:'uppercase', letterSpacing:'1px' }}>
+              Your Email Address *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setEmailErr(''); }}
+              placeholder="you@email.com"
+              style={{ width:'100%', background:G.surf2, border:`1px solid ${emailErr ? G.coral : G.brd}`, borderRadius:10, padding:'12px 14px', color:G.cream, fontSize:14, fontFamily:G.sans, outline:'none', boxSizing:'border-box' }}
+            />
+            {emailErr && <p style={{ fontSize:11, color:G.coral, marginTop:5, fontFamily:G.sans }}>{emailErr}</p>}
+            <p style={{ fontSize:11, color:G.muted, marginTop:5, fontFamily:G.sans }}>Your 20-section report will be sent here after the session.</p>
           </div>
 
           {/* CTA */}
@@ -1119,23 +1150,26 @@ export default function App() {
   // Called when user clicks "Begin Your Journey"
   const handleStart = async () => {
     if (DEMO_MODE) {
-      // Demo: skip payment, go straight to chat
       await startChat(null);
       return;
     }
 
-    // Production: check for existing valid token first
+    // Already paid — go straight to chat
     const existing = accessToken || getToken();
     if (existing) {
       await startChat(existing);
       return;
     }
 
-    // No token → redirect to PayMongo checkout
+    // Show payment page to collect email BEFORE redirecting to PayMongo
+    setView('payment');
+  };
+
+  // Called when user submits email on payment page and clicks Continue
+  const handlePaymentContinue = async (email) => {
+    if (email) localStorage.setItem('ikigai_user_email', email);
     try {
       const { checkoutUrl, sessionId } = await apiCreateCheckout();
-      // Save sessionId locally BEFORE redirecting — PayMongo's URL placeholder
-      // substitution is unreliable, so we don't depend on it.
       localStorage.setItem('ikigai_pending_session', sessionId);
       window.location.href = checkoutUrl;
     } catch (err) {
@@ -1260,8 +1294,8 @@ export default function App() {
     );
   }
 
-  return (<>
-    {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
-    <Landing onStart={handleStart} isVerifying={isVerifying}/>
+  return (<>\n    {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}\n    {view === 'payment'
+      ? <Payment onSuccess={handlePaymentContinue} onBack={() => setView('landing')}/>
+      : <Landing onStart={handleStart} isVerifying={isVerifying}/>}
   </>);
 }
