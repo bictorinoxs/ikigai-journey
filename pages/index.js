@@ -224,22 +224,55 @@ const clearChat = () => {
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-// Chat: always routes through /api/chat (server-side proxy).
-// Anthropic's API blocks direct browser requests (CORS). Never call it from the browser.
-// In DEMO_MODE at localhost, /api/chat skips JWT verification (NODE_ENV check on server).
-const apiChat = async (messages, token, max_tokens = 1000, system) => {
+// Chat: streams from /api/chat via Server-Sent Events.
+// Streaming keeps the connection alive — no Vercel 60s timeout.
+// onChunk(partialText) is called as each piece arrives for real-time display.
+const apiChat = async (messages, token, max_tokens = 1000, system, onChunk) => {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // Send token if we have one; server skips JWT check in development anyway
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ messages, system, max_tokens }),
   });
-  const d = await res.json();
-  if (!res.ok) throw new Error(d.error || 'API call failed. Check your .env.local keys.');
-  return d.content?.[0]?.text || '';
+
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'API call failed. Check your .env.local keys.');
+  }
+
+  // Read the SSE stream
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer    = '';
+  let fullText  = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || ''; // keep incomplete line
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.error) throw new Error(data.error);
+        if (data.chunk) {
+          fullText += data.chunk;
+          if (onChunk) onChunk(fullText);
+        }
+        if (data.done) return data.text || fullText;
+      } catch (e) {
+        if (e.message && !e.message.includes('JSON')) throw e;
+      }
+    }
+  }
+
+  return fullText;
 };
 
 // Whisper: only available in production
@@ -1121,8 +1154,9 @@ export default function App() {
   const [reportData,   setReportData]   = useState(null);
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [sectionsDone, setSectionsDone] = useState(0);
+  const [isGenerating,   setIsGenerating]   = useState(false);
+  const [sectionsDone,   setSectionsDone]   = useState(0);
+  const [streamingContent, setStreamingContent] = useState('');
   const [reportError,  setReportError]  = useState(null);
   const [generationMsg,setGenerationMsg]= useState('');
   const [isInApp,      setIsInApp]      = useState(false);
@@ -1222,6 +1256,7 @@ export default function App() {
     setMessages([]);
     setAnswerCount(0);
     setSectionsDone(0);
+    setStreamingContent('');
     setIsLoading(true);
     try {
       const text = await apiChat(
@@ -1258,8 +1293,33 @@ export default function App() {
     try {
       const token    = accessToken || getToken();
       const apiMsgs  = updated.map(({ role, content }) => ({ role, content }));
-      const maxTok   = newCount >= 14 ? 2500 : 1000;
-      const text     = await apiChat(apiMsgs, token, maxTok, SP);
+      const maxTok   = newCount >= 14 ? 4000 : 1000;
+
+      // Add live streaming placeholder
+      setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true }]);
+      setStreamingContent('');
+
+      const text = await apiChat(apiMsgs, token, maxTok, SP, (partial) => {
+        // Update the streaming placeholder in real time
+        setMessages(prev => prev.map((m, i) =>
+          i === prev.length - 1 && m.streaming
+            ? { ...m, content: partial }
+            : m
+        ));
+        setStreamingContent(partial);
+
+        // Show generation overlay when Claude signals it
+        const lower = partial.toLowerCase();
+        const isGenKeyword = ['generating', 'crafting your', 'synthesizing', 'all 16 answers', 'petals are aligned', 'ikigai_report_start'].some(k => lower.includes(k));
+        if (isGenKeyword && !partial.includes('IKIGAI_REPORT_END')) {
+          setIsGenerating(true);
+          setGenerationMsg('Your report is being crafted — this takes 30–60 seconds. Do not close this tab. Results will be emailed to you.');
+        }
+      });
+
+      // Remove streaming flag from the final message
+      setMessages(prev => prev.map(m => m.streaming ? { ...m, content: text, streaming: false } : m));
+      setStreamingContent('');
 
       if (text.includes('IKIGAI_REPORT_START')) {
         const match = text.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
@@ -1303,7 +1363,7 @@ export default function App() {
 
   const reset = () => {
     if (!DEMO_MODE) clearToken();
-    clearChat(); setResumeData(null); setEmailSent(false);
+    clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
     setAccessToken(null);
     setView('landing');
     setMessages([]);

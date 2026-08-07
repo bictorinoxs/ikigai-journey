@@ -1,12 +1,11 @@
 // pages/api/chat.js
-// Server-side Anthropic proxy. API key never reaches the browser.
-// maxDuration extends Vercel's function timeout for large report generation.
+// Streams Anthropic responses via Server-Sent Events.
+// Streaming keeps the connection alive past Vercel's 60s timeout.
+// The report JSON (2500+ tokens) now arrives without timing out.
 
 import Anthropic from '@anthropic-ai/sdk';
 import jwt from 'jsonwebtoken';
 
-// Extend Vercel serverless timeout to 60 seconds
-// Required for the 20-section Ikigai report generation (can take 20-40s)
 export const maxDuration = 60;
 
 export default async function handler(req, res) {
@@ -30,29 +29,48 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({
-      error: 'ANTHROPIC_API_KEY missing from .env.local',
-    });
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY missing from .env.local' });
   }
 
   const { messages, system, max_tokens = 1000 } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'messages array required' });
 
+  // ── Streaming response headers ─────────────────────────────────────────────
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+
   try {
-    const client   = new Anthropic({ apiKey });
-    const response = await client.messages.create({
+    const client = new Anthropic({ apiKey });
+
+    const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens,
       system,
       messages,
     });
-    return res.status(200).json(response);
+
+    let fullText = '';
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        const chunk = event.delta.text;
+        fullText += chunk;
+        // Send each chunk to the browser as it arrives
+        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      }
+    }
+
+    // Signal completion with the full text
+    res.write(`data: ${JSON.stringify({ done: true, text: fullText })}\n\n`);
+    res.end();
+
   } catch (err) {
-    console.error('[api/chat] Error:', err?.message, err?.status);
-    return res.status(500).json({
-      error: err?.message || 'Anthropic API call failed',
-      status: err?.status,
-      type: err?.error?.type,
-    });
+    console.error('[api/chat] Stream error:', err?.message);
+    try {
+      res.write(`data: ${JSON.stringify({ error: err?.message || 'Stream failed' })}\n\n`);
+      res.end();
+    } catch {}
   }
 }
