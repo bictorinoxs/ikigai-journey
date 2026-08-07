@@ -1294,8 +1294,12 @@ export default function App() {
     );
   }
 
-  return (<>\n    {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}\n    {view === 'payment'
-      ? <Payment onSuccess={handlePaymentContinue} onBack={() => setView('landing')}/>
-      : <Landing onStart={handleStart} isVerifying={isVerifying}/>}
-  </>);
+  return (
+    <>
+      {resumeData && <ResumeBanner answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
+      {view === 'payment'
+        ? <Payment onSuccess={handlePaymentContinue} onBack={() => setView('landing')}/>
+        : <Landing onStart={handleStart} isVerifying={isVerifying}/>}
+    </>
+  );
 }
