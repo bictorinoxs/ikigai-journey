@@ -1085,6 +1085,9 @@ export default function App() {
   const [reportData,   setReportData]   = useState(null);
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [reportError,  setReportError]  = useState(null);
+  const [generationMsg,setGenerationMsg]= useState('');
   const [isInApp,      setIsInApp]      = useState(false);
   const [isVerifying,  setIsVerifying]  = useState(false);
   const [resumeData,   setResumeData]   = useState(null);
