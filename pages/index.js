@@ -630,19 +630,23 @@ const GenProgressBar = () => {
   );
 };
 
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0 }) => {
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0 }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
-  // Progress: sectionsDone (detected from AI responses) is most accurate
-  // Falls back to message count estimate if section markers not yet detected
-  const progress = sectionsDone > 0
-    ? Math.min(sectionsDone * 25, 95)
-    : Math.min((Math.max(0, answerCount - 1) / 16) * 100, 95);
+  // Progress: questionNum (detected from AI keyword matching) is most accurate
+  // Falls back to sectionsDone, then message count estimate
+  const progress = questionNum > 0
+    ? Math.min((questionNum / 16) * 100, 95)
+    : sectionsDone > 0
+      ? Math.min(sectionsDone * 25, 95)
+      : 0;  // Don't show false progress before first question
 
-  // qNum for dot coloring — sectionsDone * 4 = questions confirmed complete
-  const qNum = sectionsDone > 0
-    ? sectionsDone * 4
-    : Math.max(0, answerCount - 1);
+  // qNum for dot coloring — use detected question number
+  const qNum = questionNum > 0
+    ? questionNum - 1   // 0-based for dot comparison
+    : sectionsDone > 0
+      ? sectionsDone * 4
+      : 0;
   const sections = [
     { label:'What You Love',            range:[1,4],  color:G.gold  },
     { label:"What You're Good At",      range:[5,8],  color:G.lav   },
@@ -749,7 +753,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
 // ─────────────────────────────────────────────────────────────────────────────
 //  REPORT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const Report = ({ data, onRestart, emailSent = false, token = null }) => {
+const Report = ({ data, onRestart, emailSent = false, token = null, userEmail = '' }) => {
   if (!data) return (
     <div style={{ background:G.bg, height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:G.cream, fontFamily:G.serif }}>
       <div style={{ textAlign:'center' }}>
@@ -1040,7 +1044,7 @@ const Report = ({ data, onRestart, emailSent = false, token = null }) => {
             </button>
           </div>
         </div>
-        <div className="print-watermark">Ikigai Journey · Filipino Edition · Generated for personal use only</div>
+        <div className="print-watermark">Ikigai Journey · Filipino Edition · Generated for personal use only{userEmail ? ` · ${userEmail}` : ''}</div>
       </div>
     </div>
   );
@@ -1135,6 +1139,34 @@ const InAppBrowserBlock = () => {
   );
 };
 
+// Detects which of the 16 questions Claude just asked based on response keywords.
+// Returns the question number (1-16) or null if not a primary question.
+const detectQuestionNumber = (text) => {
+  const t = text.toLowerCase();
+  const patterns = [
+    [1,  ['as a kid', 'without anyone paying you', 'naturally drawn to']],
+    [2,  ['time completely disappear', 'time disappear', 'flow state']],
+    [3,  ['money stopped being', 'money were no object', 'money was no object']],
+    [4,  ['topics you could talk', 'talk for an hour', 'hour straight about']],
+    [5,  ['compliment you on — repeatedly', 'people compliment you on', 'keep complimenting']],
+    [6,  ['come to you for help', 'colleagues come to you', 'friends come to you for']],
+    [7,  ['most people find genuinely difficult', 'skill you have that most', 'feels effortless to you']],
+    [8,  ['unfair advantage', 'feels natural to you but hard', 'natural to you but']],
+    [9,  ['makes you genuinely angry', 'genuinely angry', 'injustice you notice']],
+    [10, ['no good solution yet', 'struggling with a problem that', 'problem that has no']],
+    [11, ['broken in your world', 'nobody seems to be fixing', 'broken and nobody']],
+    [12, ['biggest opportunity', 'next 3 years', 'next three years']],
+    [13, ['already paying for', 'people already paying', 'currently paying for']],
+    [14, ['money currently come', 'current work or income', 'income model look like']],
+    [15, ["adjacent skills", "haven't offered yet", "haven't packaged", 'undercharging for']],
+    [16, ['price point', 'always thought might be too high', 'never tested', 'higher price']],
+  ];
+  for (const [num, keywords] of patterns) {
+    if (keywords.some(k => t.includes(k))) return num;
+  }
+  return null;
+};
+
 export default function App() {
   // Inject CSS variables and animation classes on mount
   useEffect(() => {
@@ -1156,6 +1188,7 @@ export default function App() {
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating,   setIsGenerating]   = useState(false);
   const [sectionsDone,   setSectionsDone]   = useState(0);
+  const [questionNum,    setQuestionNum]    = useState(0);
   const [streamingContent, setStreamingContent] = useState('');
   const [reportError,  setReportError]  = useState(null);
   const [generationMsg,setGenerationMsg]= useState('');
@@ -1256,6 +1289,7 @@ export default function App() {
     setMessages([]);
     setAnswerCount(0);
     setSectionsDone(0);
+    setQuestionNum(0);
     setStreamingContent('');
     setIsLoading(true);
     try {
@@ -1321,6 +1355,18 @@ export default function App() {
       setMessages(prev => prev.map(m => m.streaming ? { ...m, content: text, streaming: false } : m));
       setStreamingContent('');
 
+      // Detect if Claude just asked one of the 16 questions (update progress bar accurately)
+      const detectedQ = detectQuestionNumber(text);
+      if (detectedQ) {
+        setQuestionNum(prev => Math.max(prev, detectedQ));
+      }
+      // Detect section completion from summaries
+      const tl = text.toLowerCase();
+      if (tl.includes('section 4') && tl.includes('summary')) setSectionsDone(4);
+      else if (tl.includes('section 3') && tl.includes('summary')) setSectionsDone(3);
+      else if (tl.includes('section 2') && tl.includes('summary')) setSectionsDone(2);
+      else if (tl.includes('section 1') && tl.includes('summary')) setSectionsDone(1);
+
       if (text.includes('IKIGAI_REPORT_START')) {
         const match = text.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
         if (match) {
@@ -1332,7 +1378,12 @@ export default function App() {
             if (pre) setMessages(prev => [...prev, { role: 'assistant', content: pre }]);
             clearChat();
             const tok = accessToken || getToken();
-            apiSendReport(json, tok).then(r => { if (r.emailSent) setEmailSent(true); console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError); });
+            const userEmail = localStorage.getItem('ikigai_user_email') || '';
+            console.log('[report] Sending to email:', userEmail);
+            apiSendReport(json, tok, userEmail).then(r => {
+              if (r.emailSent) setEmailSent(true);
+              console.log('[report email]', r.emailSent ? '✅ sent to ' + r.recipientEmail : '❌ ' + r.emailError);
+            });
             setTimeout(() => setView('report'), 1500);
           } catch {
             setMessages(prev => [...prev, { role: 'assistant', content: text }]);
@@ -1380,7 +1431,7 @@ export default function App() {
   if (isInApp) return <InAppBrowserBlock/>;
 
   if (view === 'report') {
-    return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} />;
+    return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} userEmail={localStorage.getItem('ikigai_user_email') || ''} />;
   }
 
   if (view === 'chat') {
@@ -1398,6 +1449,7 @@ export default function App() {
         generationMsg={generationMsg}
         reportError={reportError}
         sectionsDone={sectionsDone}
+        questionNum={questionNum}
       />
     );
   }

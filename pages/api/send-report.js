@@ -306,6 +306,11 @@ export default async function handler(req, res) {
   // Use email from JWT first, then fallback to one provided in body
   const recipientEmail = email || userEmail || null;
 
+  console.log('[send-report] JWT email:', email);
+  console.log('[send-report] Body userEmail:', userEmail);
+  console.log('[send-report] Using recipientEmail:', recipientEmail);
+  console.log('[send-report] RESEND_API_KEY set:', !!process.env.RESEND_API_KEY);
+
   if (!reportData) return res.status(400).json({ error: 'reportData required' });
 
   // Generate the HTML
