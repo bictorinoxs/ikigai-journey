@@ -577,7 +577,27 @@ const Payment = ({ onSuccess, onBack }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null }) => {
+// Animated progress bar for report generation overlay
+const GenProgressBar = () => {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setPct(p => p < 88 ? +(p + 0.6).toFixed(1) : p), 400);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+        <span style={{ fontSize:11, color:G.muted, fontFamily:G.sans }}>Generating your report...</span>
+        <span style={{ fontSize:11, color:G.gold, fontFamily:G.sans }}>{Math.round(pct)}%</span>
+      </div>
+      <div style={{ height:4, background:G.surf2, borderRadius:2 }}>
+        <div style={{ height:'100%', width:`${pct}%`, background:G.gold, borderRadius:2, transition:'width .4s ease' }}/>
+      </div>
+    </div>
+  );
+};
+
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0 }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
   // Progress: sectionsDone (detected from AI responses) is most accurate
@@ -1102,6 +1122,7 @@ export default function App() {
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [sectionsDone, setSectionsDone] = useState(0);
   const [reportError,  setReportError]  = useState(null);
   const [generationMsg,setGenerationMsg]= useState('');
   const [isInApp,      setIsInApp]      = useState(false);
@@ -1200,6 +1221,7 @@ export default function App() {
     setView('chat');
     setMessages([]);
     setAnswerCount(0);
+    setSectionsDone(0);
     setIsLoading(true);
     try {
       const text = await apiChat(
@@ -1315,6 +1337,7 @@ export default function App() {
         isGenerating={isGenerating}
         generationMsg={generationMsg}
         reportError={reportError}
+        sectionsDone={sectionsDone}
       />
     );
   }
