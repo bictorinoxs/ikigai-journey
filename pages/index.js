@@ -281,12 +281,12 @@ const apiVerifyPayment = async (sessionId) => {
 };
 
 // Send report via email + return HTML for download
-const apiSendReport = async (reportData, token) => {
+const apiSendReport = async (reportData, token, emailOverride) => {
   try {
     const res = await fetch('/api/send-report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
-      body: JSON.stringify({ reportData }),
+      body: JSON.stringify({ reportData, userEmail: emailOverride }),
     });
     return await res.json();
   } catch (err) { return { ok: false, emailError: err?.message }; }
@@ -541,7 +541,7 @@ const Payment = ({ onSuccess, onBack }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef }) => {
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
   const progress = Math.min((answerCount/17)*100,95);
@@ -613,6 +613,21 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           <div ref={endRef}/>
         </div>
 
+        {isGenerating && (
+          <div style={{ background:'#1a1000', borderTop:`2px solid ${G.gold}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:12 }}>
+            <Dots/>
+            <div>
+              <p style={{ fontSize:13, fontWeight:600, color:G.gold, fontFamily:G.sans, margin:0 }}>🌸 Crafting your personal report...</p>
+              <p style={{ fontSize:11, color:G.muted, fontFamily:G.sans, marginTop:2 }}>{generationMsg || 'Takes 30–60 seconds. Please keep this tab open.'}</p>
+            </div>
+          </div>
+        )}
+        {reportError && !isGenerating && (
+          <div style={{ background:'#2a0a0a', borderTop:`2px solid ${G.coral}`, padding:'10px 22px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+            <p style={{ fontSize:12, color:G.coral, fontFamily:G.sans, margin:0 }}>{reportError}</p>
+            <button onClick={onSend} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:8, padding:'6px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:G.sans, flexShrink:0 }}>Retry →</button>
+          </div>
+        )}
         {/* Input */}
         <div style={{ borderTop:`1px solid ${G.brd}`, padding:'14px 24px', background:G.surf }}>
           <div className="ikigai-chat-input-row" style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
@@ -936,6 +951,90 @@ const Report = ({ data, onRestart, emailSent = false, token = null }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Main App ─────────────────────────────────────────────────────────────────
+// ── In-App Browser Detector + Block Screen ───────────────────────────────────
+// Detects Facebook, Instagram, Messenger in-app browsers.
+// Shows a full-screen prompt to open in the device's default browser instead.
+
+const detectInAppBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /FBAN|FBAV|FB_IAB|FB4A|FBIOS|MessengerBrowser|Instagram|MESSENGER/i.test(ua);
+};
+
+const isAndroid = () => typeof window !== 'undefined' && /Android/i.test(navigator.userAgent);
+const isIOS     = () => typeof window !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const InAppBrowserBlock = () => {
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const openInChrome = () => {
+    // Android intent to open in Chrome
+    const intentUrl = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    window.location.href = intentUrl;
+    // Fallback after 1s if intent fails
+    setTimeout(() => {
+      window.location.href = currentUrl;
+    }, 1000);
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:G.bg, zIndex:99999, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, fontFamily:G.sans, textAlign:'center' }}>
+      <PetalMark size={56} animated/>
+
+      <h2 style={{ color:G.gold, fontSize:22, fontFamily:G.serif, fontWeight:700, marginTop:20, marginBottom:10 }}>
+        Open in Your Browser
+      </h2>
+      <p style={{ color:G.soft, fontSize:14, lineHeight:1.75, marginBottom:28, maxWidth:320 }}>
+        For the best experience and secure payment processing, please open this page in your default browser — not inside Facebook or Instagram.
+      </p>
+
+      {/* Android instructions */}
+      {isAndroid() && (
+        <div style={{ width:'100%', maxWidth:340 }}>
+          <button
+            onClick={openInChrome}
+            style={{ width:'100%', background:G.gold, color:G.bg, border:'none', borderRadius:10, padding:'14px 24px', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:16 }}
+          >
+            Open in Chrome
+          </button>
+          <div style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:12, padding:'16px 18px' }}>
+            <p style={{ color:G.muted, fontSize:12, lineHeight:1.7, marginBottom:8 }}>Or open manually:</p>
+            <p style={{ color:G.cream, fontSize:13, lineHeight:1.8 }}>
+              1. Tap the <strong style={{color:G.gold}}>⋮ three dots</strong> at the top right<br/>
+              2. Select <strong style={{color:G.gold}}>"Open in Chrome"</strong> or <strong style={{color:G.gold}}>"Open in browser"</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* iOS instructions */}
+      {isIOS() && (
+        <div style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:12, padding:'16px 18px', maxWidth:340, width:'100%' }}>
+          <p style={{ color:G.cream, fontSize:13, lineHeight:1.9 }}>
+            1. Tap the <strong style={{color:G.gold}}>⋯ three dots</strong> at the top right<br/>
+            2. Select <strong style={{color:G.gold}}>"Open in Safari"</strong> or <strong style={{color:G.gold}}>"Open in Browser"</strong>
+          </p>
+        </div>
+      )}
+
+      {/* Generic fallback */}
+      {!isAndroid() && !isIOS() && (
+        <div style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:12, padding:'16px 18px', maxWidth:340, width:'100%' }}>
+          <p style={{ color:G.cream, fontSize:13, lineHeight:1.9 }}>
+            Tap the <strong style={{color:G.gold}}>menu (⋮ or ⋯)</strong> in your browser<br/>
+            then select <strong style={{color:G.gold}}>"Open in browser"</strong>
+          </p>
+        </div>
+      )}
+
+      <p style={{ color:G.muted, fontSize:11, marginTop:20, lineHeight:1.6 }}>
+        Or copy this link and paste it in Chrome or Safari:<br/>
+        <span style={{ color:G.gold, wordBreak:'break-all', fontSize:11 }}>{currentUrl}</span>
+      </p>
+    </div>
+  );
+};
+
 export default function App() {
   // Inject CSS variables and animation classes on mount
   useEffect(() => {
@@ -955,6 +1054,7 @@ export default function App() {
   const [reportData,   setReportData]   = useState(null);
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
+  const [isInApp,      setIsInApp]      = useState(false);
   const [isVerifying,  setIsVerifying]  = useState(false);
   const [resumeData,   setResumeData]   = useState(null);
   const [emailSent,    setEmailSent]    = useState(false);
@@ -963,6 +1063,11 @@ export default function App() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // Detect in-app browser (Facebook, Instagram, Messenger) on mount
+  useEffect(() => {
+    if (detectInAppBrowser()) setIsInApp(true);
+  }, []);
 
   // On mount: handle PayMongo redirect (?paid=true) or restore existing token.
   // IMPORTANT: PayMongo's success_url placeholder substitution is unreliable,
@@ -1072,11 +1177,16 @@ export default function App() {
     const newCount = answerCount + 1;
     setAnswerCount(newCount);
     setIsLoading(true);
+    if (newCount >= 14) {
+      setIsGenerating(true);
+      setReportError(null);
+      setGenerationMsg('Your answers are being woven into your personal report. This takes 30–60 seconds — please keep this tab open.');
+    }
 
     try {
       const token    = accessToken || getToken();
       const apiMsgs  = updated.map(({ role, content }) => ({ role, content }));
-      const maxTok   = newCount >= 14 ? 4096 : 1000;
+      const maxTok   = newCount >= 14 ? 2500 : 1000;
       const text     = await apiChat(apiMsgs, token, maxTok, SP);
 
       if (text.includes('IKIGAI_REPORT_START')) {
@@ -1125,6 +1235,9 @@ export default function App() {
   const handleDismissResume = () => { clearChat(); setResumeData(null); };
 
 
+  // Block in-app browsers and ask user to open in default browser
+  if (isInApp) return <InAppBrowserBlock/>;
+
   if (view === 'report') {
     return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} />;
   }
@@ -1140,6 +1253,9 @@ export default function App() {
         answerCount={answerCount}
         endRef={endRef}
         token={accessToken || getToken()}
+        isGenerating={isGenerating}
+        generationMsg={generationMsg}
+        reportError={reportError}
       />
     );
   }
