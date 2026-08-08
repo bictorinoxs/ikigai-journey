@@ -1096,7 +1096,7 @@ const Report = ({ data, onRestart, emailSent = false, token = null, userEmail = 
 // Used in a FRESH standalone API call — no conversation history.
 // Minimal input = maximum tokens available for full JSON output.
 const REPORT_SP = `You are generating a personal Ikigai report in JSON format.
-Output ONLY the JSON between IKIGAI_REPORT_START and IKIGAI_REPORT_END. No other text before or after.
+Output ONLY a valid JSON object starting with { and ending with }. No markdown, no code blocks, no IKIGAI_REPORT_START markers. Just raw JSON.
 Use "Monday morning" in vision_12mo — never any other day.
 Make every field deeply specific to this person's actual words and situation.
 
@@ -1539,9 +1539,11 @@ export default function App() {
           setIsGenerating(true);
           setGenerationMsg('Your personal purpose report is being crafted — this takes 2–5 minutes. Do not close this tab. Your results will also be emailed to you.');
           if (text.includes('GENERATE_REPORT_NOW')) {
+            // Capture current messages now (before state updates)
+            const msgsSnapshot = [...messages, { role: 'assistant', content: text }];
             setTimeout(() => {
               setSectionSummaries(currentSums => {
-                generateReport(currentSums);
+                generateReport(currentSums, msgsSnapshot);
                 return currentSums;
               });
             }, 600);
@@ -1578,60 +1580,89 @@ export default function App() {
   // Production Whisper function — only passed to ChatView when not in demo mode
   // generateReport() — Fresh API call with only section summaries as context.
   // This avoids the long conversation history that was consuming all input tokens.
-  const generateReport = async (summaries) => {
+  const generateReport = async (summaries, conversationMessages) => {
     const tok = accessToken || getToken();
     const userEmail = localStorage.getItem('ikigai_user_email') || '';
     const userName  = localStorage.getItem('ikigai_user_name') || '';
 
-    const parts = [
-      summaries.s1 && ('WHAT ' + (userName||'THEY') + ' LOVES:\n' + summaries.s1),
-      summaries.s2 && ('WHAT ' + (userName||'THEY') + ' IS GOOD AT:\n' + summaries.s2),
-      summaries.s3 && 'WHAT THE WORLD NEEDS:\n' + summaries.s3,
-      summaries.s4 && 'WHAT CAN BE PAID FOR:\n' + summaries.s4,
-    ].filter(Boolean).join('\n\n');
+    // Build context from section summaries OR fall back to conversation messages
+    const summaryParts = [
+      summaries.s1 && ('SECTION 1 — What ' + (userName||'they') + ' love:\n' + summaries.s1),
+      summaries.s2 && ('SECTION 2 — What ' + (userName||'they') + ' are good at:\n' + summaries.s2),
+      summaries.s3 && ('SECTION 3 — What the world needs:\n' + summaries.s3),
+      summaries.s4 && ('SECTION 4 — What can be paid for:\n' + summaries.s4),
+    ].filter(Boolean);
 
-    const userMsg = parts
-      ? 'Generate the complete Ikigai report for ' + (userName||'this person') + ' based on their discovery session summaries:\n\n' + parts
-      : 'Generate the complete Ikigai report for ' + (userName||'this person') + ' based on their discovery session.';
+    let userMsg;
+    if (summaryParts.length >= 2) {
+      userMsg = 'Generate the complete Ikigai JSON report for ' + (userName||'this person') + '. Here are their 4 discovery section summaries:\n\n' + summaryParts.join('\n\n');
+      console.log('[generateReport] Using', summaryParts.length, 'section summaries');
+    } else {
+      // Fall back to last 30 conversation messages as context
+      const recentMsgs = (conversationMessages || [])
+        .filter(m => !m.hidden && m.content)
+        .slice(-30)
+        .map(m => (m.role === 'user' ? 'USER: ' : 'GUIDE: ') + (m.content || ''))
+        .join('\n\n');
+      userMsg = 'Generate the complete Ikigai JSON report for ' + (userName||'this person') + ' based on this discovery session:\n\n' + recentMsgs;
+      console.log('[generateReport] Using conversation fallback,', (conversationMessages||[]).length, 'messages');
+    }
 
     try {
       console.log('[generateReport] Fresh report call starting...');
       const reportText = await apiChat([{ role: 'user', content: userMsg }], tok, 8192, REPORT_SP);
       console.log('[generateReport] Response length:', reportText.length, 'chars');
 
-      // Extract JSON — try markers first, then fallback to raw JSON detection
+      // Extract JSON — multiple methods
       let json = null;
+      // Strip markdown code fences Claude sometimes wraps around JSON
+      const cleanText = reportText
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      console.log('[generateReport] Response length:', reportText.length, '| Preview:', cleanText.slice(0, 150));
 
-      // Method 1: Standard markers
-      if (reportText.includes('IKIGAI_REPORT_START')) {
-        const m = reportText.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
-        if (m) { try { json = JSON.parse(m[1].trim()); } catch(e) { console.warn('[report] Marker parse failed:', e.message); } }
-      }
-
-      // Method 2: Extract largest JSON object from response (fallback when markers missing)
-      if (!json) {
-        const jsonMatch = reportText.match(/\{[\s\S]*"ikigai_sentence"[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            json = JSON.parse(jsonMatch[0]);
-            console.log('[generateReport] Parsed JSON via fallback detection');
-          } catch(e) {
-            // Try to fix truncated JSON by finding last complete field
-            const raw = jsonMatch[0];
-            const lastComma = raw.lastIndexOf(',\n  "');
-            if (lastComma > 0) {
+      // Method 1: Raw JSON object — greedy match for largest object
+      const rawMatch = cleanText.match(/\{[\s\S]*"ikigai_sentence"[\s\S]*\}/);
+      if (rawMatch) {
+        try { json = JSON.parse(rawMatch[0]); console.log('[generateReport] ✅ Raw JSON parsed'); }
+        catch {
+          // Try truncation recovery — find last complete key-value pair
+          const raw = rawMatch[0];
+          for (const sep of ['",\n  "', '",\n "', '"\n}']) {
+            const pos = raw.lastIndexOf(sep === '"\n}' ? '"\n}' : sep);
+            if (pos > 100) {
               try {
-                json = JSON.parse(raw.slice(0, lastComma) + '\n}');
-                console.log('[generateReport] Parsed truncated JSON with recovery');
+                const attempt = sep === '"\n}' ? raw : raw.slice(0, pos + 1) + '\n}';
+                json = JSON.parse(attempt);
+                console.log('[generateReport] ✅ Recovered truncated JSON at pos', pos);
+                break;
               } catch {}
             }
           }
         }
       }
 
+      // Method 2: Markers (legacy fallback)
+      if (!json && cleanText.includes('IKIGAI_REPORT_START')) {
+        const m = cleanText.match(/IKIGAI_REPORT_START\s*([\s\S]*?)(?:IKIGAI_REPORT_END|$)/);
+        if (m) { try { json = JSON.parse(m[1].trim()); console.log('[generateReport] ✅ Parsed via markers'); } catch {} }
+      }
+
+      // Method 3: Any object with archetype_name (broader fallback)
+      if (!json) {
+        const anyMatch = cleanText.match(/\{[\s\S]*"archetype_name"[\s\S]*\}/);
+        if (anyMatch) { try { json = JSON.parse(anyMatch[0]); console.log('[generateReport] ✅ Parsed via archetype fallback'); } catch {} }
+      }
+
+      // Method 4: First complete JSON object in response
+      if (!json) {
+        const firstObj = cleanText.match(/^[\s\S]*?(\{[\s\S]+\})[\s\S]*$/);
+        if (firstObj) { try { json = JSON.parse(firstObj[1]); } catch {} }
+      }
+
       if (!json || !json.ikigai_sentence) {
-        console.error('[generateReport] No valid JSON found. Response preview:', reportText.slice(0, 500));
-        throw new Error('Could not extract report JSON from response');
+        throw new Error('No valid JSON in response. Preview: ' + cleanText.slice(0, 200));
       }
 
       // Process report
@@ -1690,7 +1721,7 @@ export default function App() {
         reportError={reportError}
         sectionsDone={sectionsDone}
         questionNum={questionNum}
-        onRetryReport={() => { setSectionSummaries(s => { generateReport(s); return s; }); setReportError(null); setIsGenerating(true); }}
+        onRetryReport={() => { const snap=[...messages]; setSectionSummaries(s => { generateReport(s, snap); return s; }); setReportError(null); setIsGenerating(true); }}
       />
     );
   }
