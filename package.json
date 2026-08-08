@@ -15,8 +15,9 @@
     "@anthropic-ai/sdk": "^0.26.0",
     "openai": "^4.47.0",
     "jsonwebtoken": "^9.0.2",
-    "pdfkit": "^0.15.0",
-    "resend": "^3.0.0"
+    "resend": "^3.0.0",
+    "puppeteer-core": "^21.0.0",
+    "@sparticuz/chromium-min": "^119.0.2"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
