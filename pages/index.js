@@ -49,7 +49,7 @@ ABSOLUTE RULES:
 • 1-word answer → "Tell me more — what does [word] look like specifically?"
 • "I don't know" → rephrase smaller
 
-FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Let them know that each of your responses may take 30 seconds to 1 minute as you carefully reflect on their answers — this is intentional, not a glitch. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
+FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Let them know that each of your responses may take 2 to 5 minutes as you carefully reflect on their answers — this is intentional, not a glitch. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
 
 SECTION 1 — WHAT YOU LOVE (Q1–Q4):
 Q1: What did you do as a kid for hours without anyone paying you? Be specific.
@@ -657,7 +657,16 @@ const GenProgressBar = () => {
 };
 
 const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null }) => {
-  const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
+  // Mobile: Enter adds a new line (natural behavior). Use the ↑ button to send.
+  // Desktop: Enter sends, Shift+Enter adds new line.
+  const isMobileDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const handleKey = e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (isMobileDevice) return; // Let Enter add a newline on mobile
+      e.preventDefault();
+      onSend();
+    }
+  };
 
   // Progress: questionNum (detected from AI keyword matching) is most accurate
   // Falls back to sectionsDone, then message count estimate
@@ -746,7 +755,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
               <Dots/>
               <div>
                 <p style={{ fontSize:13, fontWeight:600, color:G.gold, fontFamily:G.sans, margin:0 }}>🌸 Crafting your personal purpose report...</p>
-                <p style={{ fontSize:11, color:G.muted, fontFamily:G.sans, marginTop:2 }}>{generationMsg || 'Takes 30–60 seconds. Do not close this tab — your results will also be sent to your email.'}</p>
+                <p style={{ fontSize:11, color:G.muted, fontFamily:G.sans, marginTop:2 }}>{generationMsg || 'Takes 2–5 minutes. Do not close this tab — your results will also be sent to your email.'}</p>
               </div>
             </div>
             <GenProgressBar/>
@@ -769,7 +778,9 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
             <button onClick={onSend} disabled={isLoading||!input.trim()}
               style={{ background:isLoading||!input.trim()?G.brd:G.gold, color:isLoading||!input.trim()?G.muted:G.bg, border:'none', borderRadius:10, width:42, height:42, cursor:isLoading||!input.trim()?'not-allowed':'pointer', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:700 }}>↑</button>
           </div>
-          <p style={{ fontSize:11, color:G.muted, marginTop:7 }}>Enter to send · Shift+Enter for new line</p>
+          <p style={{ fontSize:11, color:G.muted, marginTop:7 }}>
+            {isMobileDevice ? 'Tap ↑ to send · Enter for new line' : 'Enter to send · Shift+Enter for new line'}
+          </p>
         </div>
       </div>
     </div>
@@ -1449,7 +1460,7 @@ export default function App() {
         const isGenKeyword = ['generating', 'crafting your', 'synthesizing', 'all 16 answers', 'petals are aligned', 'ikigai_report_start'].some(k => lower.includes(k));
         if (isGenKeyword && !partial.includes('IKIGAI_REPORT_END')) {
           setIsGenerating(true);
-          setGenerationMsg('Your report is being crafted — this takes 30–60 seconds. Do not close this tab. Results will be emailed to you.');
+          setGenerationMsg('Your report is being crafted — this takes 2–5 minutes. Do not close this tab. Results will be emailed to you.');
         }
       });
 
@@ -1526,7 +1537,7 @@ export default function App() {
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW') || ['generating your','crafting your','petals are aligned','all 16 answers'].some(k => text.toLowerCase().includes(k))) {
           setIsGenerating(true);
-          setGenerationMsg('Your personal purpose report is being crafted — this takes 30–60 seconds. Do not close this tab. Your results will also be emailed to you.');
+          setGenerationMsg('Your personal purpose report is being crafted — this takes 2–5 minutes. Do not close this tab. Your results will also be emailed to you.');
           if (text.includes('GENERATE_REPORT_NOW')) {
             setTimeout(() => {
               setSectionSummaries(currentSums => {
