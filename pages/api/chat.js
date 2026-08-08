@@ -1,7 +1,6 @@
 // pages/api/chat.js
 // Streams Anthropic responses via Server-Sent Events.
-// Streaming keeps the connection alive past Vercel's 60s timeout.
-// The report JSON (2500+ tokens) now arrives without timing out.
+// max_tokens: 8192 allows full 30-field report JSON without truncation.
 
 import Anthropic from '@anthropic-ai/sdk';
 import jwt from 'jsonwebtoken';
@@ -13,7 +12,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Skip JWT in development
   const isDev = process.env.NODE_ENV === 'development';
   if (!isDev) {
     const auth  = req.headers.authorization || '';
@@ -28,41 +26,34 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY missing from .env.local' });
-  }
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY missing' });
 
   const { messages, system, max_tokens = 1000 } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'messages array required' });
 
-  // ── Streaming response headers ─────────────────────────────────────────────
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+  res.setHeader('X-Accel-Buffering', 'no');
 
   try {
     const client = new Anthropic({ apiKey });
-
     const stream = client.messages.stream({
-      model: 'claude-sonnet-4-6',
-      max_tokens,
+      model:      'claude-sonnet-4-6',
+      max_tokens: Math.min(max_tokens, 8192),
       system,
       messages,
     });
 
     let fullText = '';
-
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
         const chunk = event.delta.text;
         fullText += chunk;
-        // Send each chunk to the browser as it arrives
         res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
       }
     }
 
-    // Signal completion with the full text
     res.write(`data: ${JSON.stringify({ done: true, text: fullText })}\n\n`);
     res.end();
 

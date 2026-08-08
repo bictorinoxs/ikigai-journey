@@ -1326,8 +1326,15 @@ export default function App() {
 
     try {
       const token    = accessToken || getToken();
-      const apiMsgs  = updated.map(({ role, content }) => ({ role, content }));
-      const maxTok   = newCount >= 14 ? 4000 : 1000;
+      // Trim conversation to last 30 messages to prevent token overflow.
+      // Keep the first 2 (hidden Begin + first Claude reply) + last 28.
+      const allMsgs  = updated.map(({ role, content }) => ({ role, content }));
+      const apiMsgs  = allMsgs.length > 30
+        ? [...allMsgs.slice(0, 2), ...allMsgs.slice(-28)]
+        : allMsgs;
+      // Report JSON needs ~5000-6000 tokens. After Q16 (count 17+), use 8000.
+      // Regular responses need 1000 tokens.
+      const maxTok   = newCount >= 17 ? 8000 : newCount >= 10 ? 2000 : 1000;
 
       // Add live streaming placeholder
       setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true }]);
@@ -1375,7 +1382,13 @@ export default function App() {
             setReportData(json);
             setIsGenerating(false); setReportError(null);
             const pre = text.split('IKIGAI_REPORT_START')[0].trim();
-            if (pre) setMessages(prev => [...prev, { role: 'assistant', content: pre }]);
+            // Replace the streaming message with just the pre-report text (strip JSON from chat)
+            setMessages(prev => {
+              const withoutStreaming = prev.filter(m => !m.streaming);
+              // Also remove the last message if it's the finalized streaming one with JSON
+              const cleaned = withoutStreaming.filter(m => !m.content?.includes('IKIGAI_REPORT_START'));
+              return pre ? [...cleaned, { role: 'assistant', content: pre }] : cleaned;
+            });
             clearChat();
             const tok = accessToken || getToken();
             const userEmail = localStorage.getItem('ikigai_user_email') || '';
@@ -1385,8 +1398,17 @@ export default function App() {
               console.log('[report email]', r.emailSent ? '✅ sent to ' + r.recipientEmail : '❌ ' + r.emailError);
             });
             setTimeout(() => setView('report'), 1500);
-          } catch {
-            setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+          } catch (parseErr) {
+            console.error('[report] JSON parse error:', parseErr?.message);
+            console.error('[report] Raw match:', match[1]?.slice(0, 200));
+            setIsGenerating(false);
+            setReportError('Report JSON was incomplete — please try sending "generate my report" to retry.');
+            // Show only the pre-report text, not the raw JSON
+            const preOnly = text.split('IKIGAI_REPORT_START')[0].trim();
+            if (preOnly) setMessages(prev => {
+              const cleaned = prev.filter(m => !m.streaming && !m.content?.includes('IKIGAI_REPORT_START'));
+              return [...cleaned, { role: 'assistant', content: preOnly }];
+            });
           }
         }
       } else {
@@ -1396,7 +1418,9 @@ export default function App() {
           setIsGenerating(true);
           setGenerationMsg('Your report is being crafted — this takes 30–60 seconds. Do not close this tab. Your results will also be sent to your email.');
         }
-        setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+        // NOTE: Do NOT add another message here.
+        // The streaming placeholder was already finalized with the full text above.
+        // Adding here would create duplicate messages after every single response.
       }
     } catch (err) {
       setIsGenerating(false);
