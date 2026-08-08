@@ -656,7 +656,7 @@ const GenProgressBar = () => {
   );
 };
 
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0 }) => {
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null }) => {
   const handleKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); onSend(); } };
 
   // Progress: questionNum (detected from AI keyword matching) is most accurate
@@ -755,7 +755,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
         {reportError && !isGenerating && (
           <div style={{ background:'#2a0a0a', borderTop:`2px solid ${G.coral}`, padding:'10px 22px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
             <p style={{ fontSize:12, color:G.coral, fontFamily:G.sans, margin:0 }}>{reportError}</p>
-            <button onClick={onSend} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:8, padding:'6px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:G.sans, flexShrink:0 }}>Retry →</button>
+            <button onClick={() => onRetryReport ? onRetryReport() : onSend()} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:8, padding:'6px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:G.sans, flexShrink:0 }}>Retry →</button>
           </div>
         )}
         {/* Input */}
@@ -1584,42 +1584,71 @@ export default function App() {
       : 'Generate the complete Ikigai report for ' + (userName||'this person') + ' based on their discovery session.';
 
     try {
-      console.log('[generateReport] Making fresh report call, summaries:', Object.keys(summaries).filter(k => summaries[k]));
+      console.log('[generateReport] Fresh report call starting...');
       const reportText = await apiChat([{ role: 'user', content: userMsg }], tok, 8192, REPORT_SP);
+      console.log('[generateReport] Response length:', reportText.length, 'chars');
 
+      // Extract JSON — try markers first, then fallback to raw JSON detection
+      let json = null;
+
+      // Method 1: Standard markers
       if (reportText.includes('IKIGAI_REPORT_START')) {
-        const match = reportText.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
-        if (match) {
-          const json = JSON.parse(match[1].trim());
-          const startTime = parseInt(localStorage.getItem('ikigai_chat_start') || '0');
-          const durationMinutes = startTime ? +((Date.now() - startTime) / 60000).toFixed(1) : null;
-
-          localStorage.setItem('ikigai_saved_report', JSON.stringify(json));
-          localStorage.setItem('ikigai_saved_report_token', tok || '');
-          if (json.user_name) localStorage.setItem('ikigai_user_name', json.user_name);
-
-          setReportData(json);
-          setIsGenerating(false);
-          setReportError(null);
-          clearChat();
-
-          apiLogSession(tok?.slice(-12)||null, json.user_name||userName, userEmail, durationMinutes, json);
-          apiSendReport(json, tok, userEmail).then(r => {
-            if (r.emailSent) setEmailSent(true);
-            console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError);
-          });
-
-          setTimeout(() => setView('report'), 800);
-        } else {
-          throw new Error('JSON truncated — IKIGAI_REPORT_END not found');
-        }
-      } else {
-        throw new Error('IKIGAI_REPORT_START not in response');
+        const m = reportText.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
+        if (m) { try { json = JSON.parse(m[1].trim()); } catch(e) { console.warn('[report] Marker parse failed:', e.message); } }
       }
-    } catch (err) {
-      console.error('[generateReport] Error:', err?.message);
+
+      // Method 2: Extract largest JSON object from response (fallback when markers missing)
+      if (!json) {
+        const jsonMatch = reportText.match(/\{[\s\S]*"ikigai_sentence"[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            json = JSON.parse(jsonMatch[0]);
+            console.log('[generateReport] Parsed JSON via fallback detection');
+          } catch(e) {
+            // Try to fix truncated JSON by finding last complete field
+            const raw = jsonMatch[0];
+            const lastComma = raw.lastIndexOf(',\n  "');
+            if (lastComma > 0) {
+              try {
+                json = JSON.parse(raw.slice(0, lastComma) + '\n}');
+                console.log('[generateReport] Parsed truncated JSON with recovery');
+              } catch {}
+            }
+          }
+        }
+      }
+
+      if (!json || !json.ikigai_sentence) {
+        console.error('[generateReport] No valid JSON found. Response preview:', reportText.slice(0, 500));
+        throw new Error('Could not extract report JSON from response');
+      }
+
+      // Process report
+      const startTime = parseInt(localStorage.getItem('ikigai_chat_start') || '0');
+      const durationMinutes = startTime ? +((Date.now() - startTime) / 60000).toFixed(1) : null;
+
+      localStorage.setItem('ikigai_saved_report', JSON.stringify(json));
+      localStorage.setItem('ikigai_saved_report_token', tok || '');
+      if (json.user_name) localStorage.setItem('ikigai_user_name', json.user_name);
+
+      setReportData(json);
       setIsGenerating(false);
-      setReportError('Report generation failed — type "generate my report" to retry. Error: ' + err.message);
+      setReportError(null);
+      clearChat();
+
+      console.log('[generateReport] ✅ Report ready for:', json.user_name || userName);
+      apiLogSession(tok?.slice(-12)||null, json.user_name||userName, userEmail, durationMinutes, json);
+      apiSendReport(json, tok, userEmail).then(r => {
+        if (r.emailSent) setEmailSent(true);
+        console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError);
+      });
+
+      setTimeout(() => setView('report'), 800);
+
+    } catch (err) {
+      console.error('[generateReport] Failed:', err?.message);
+      setIsGenerating(false);
+      setReportError('Report generation failed: ' + err.message + ' — tap Retry or type "generate my report"');
     }
   };
 
@@ -1650,6 +1679,7 @@ export default function App() {
         reportError={reportError}
         sectionsDone={sectionsDone}
         questionNum={questionNum}
+        onRetryReport={() => { setSectionSummaries(s => { generateReport(s); return s; }); setReportError(null); setIsGenerating(true); }}
       />
     );
   }
