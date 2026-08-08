@@ -1395,6 +1395,33 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isGenerating]);
 
+  // Screen Wake Lock — keeps mobile screen on during report generation
+  // Prevents screen timeout from interrupting the 2-5 minute generation
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('wakeLock' in navigator)) return;
+    let wakeLock = null;
+
+    const acquire = async () => {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('[wakeLock] ✅ Screen stays on during generation');
+        wakeLock.addEventListener('release', () => {
+          if (isGenerating) acquire(); // re-acquire if system released it
+        });
+      } catch (err) {
+        console.warn('[wakeLock] Could not acquire:', err?.message);
+      }
+    };
+
+    if (isGenerating) {
+      acquire();
+    } else {
+      if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    }
+
+    return () => { if (wakeLock) wakeLock.release().catch(() => {}); };
+  }, [isGenerating]);
+
   const persistToken = (t) => {
     setAccessToken(t);
     saveToken(t);
