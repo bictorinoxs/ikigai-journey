@@ -74,6 +74,8 @@ Q15: What adjacent skills or knowledge could you package — things you know but
 Q16: What's a price point you've always thought might be too high — but have never actually tested?
 [After Q16: SECTION 4 SUMMARY → say: "The petals are aligned. Generating your Ikigai report now..."]
 
+CRITICAL: In vision_12mo, ALWAYS use "Monday morning" — never Tuesday, Wednesday, or any other day.
+
 THEN OUTPUT EXACTLY — no text after IKIGAI_REPORT_END:
 IKIGAI_REPORT_START
 {
@@ -118,7 +120,7 @@ IKIGAI_REPORT_START
   "energy_feeds":["condition 1","condition 2","condition 3"],
   "energy_drains":["pattern 1","pattern 2","pattern 3"],
   "stop_doing":["item 1","item 2","item 3","item 4","item 5"],
-  "vision_12mo":"Concrete sensory Monday morning 12 months from now.",
+  "vision_12mo":"ALWAYS write this as a Monday morning scene — never Tuesday or any other day. Concrete sensory picture of a Monday morning 12 months from now.",
   "vision_5yr":"Where 5 years of this Ikigai leads.",
   "pull_quote1":"Verbatim from their answers",
   "pull_quote2":"Verbatim from their answers",
