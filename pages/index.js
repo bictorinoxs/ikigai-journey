@@ -644,17 +644,26 @@ const Payment = ({ onSuccess, onBack }) => {
 const GenProgressBar = () => {
   const [pct, setPct] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setPct(p => p < 88 ? +(p + 0.6).toFixed(1) : p), 400);
+    // Advance to 92% over ~90s, then slow crawl to show still active
+    const t = setInterval(() => setPct(p => {
+      if (p < 70) return +(p + 0.8).toFixed(1);  // fast start
+      if (p < 92) return +(p + 0.2).toFixed(1);  // slow near end
+      return +(p + 0.05).toFixed(2);              // very slow crawl above 92
+    }), 400);
     return () => clearInterval(t);
   }, []);
+  const label = pct < 30 ? 'Analysing your answers...'
+              : pct < 60 ? 'Building your Ikigai profile...'
+              : pct < 85 ? 'Writing your personal report...'
+              : 'Finalising your report — almost ready...';
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
-        <span style={{ fontSize:11, color:G.muted, fontFamily:G.sans }}>Generating your report...</span>
-        <span style={{ fontSize:11, color:G.gold, fontFamily:G.sans }}>{Math.round(pct)}%</span>
+        <span style={{ fontSize:11, color:G.muted, fontFamily:G.sans }}>{label}</span>
+        <span style={{ fontSize:11, color:G.gold, fontFamily:G.sans }}>{Math.min(99, Math.round(pct))}%</span>
       </div>
       <div style={{ height:4, background:G.surf2, borderRadius:2 }}>
-        <div style={{ height:'100%', width:`${pct}%`, background:G.gold, borderRadius:2, transition:'width .4s ease' }}/>
+        <div style={{ height:'100%', width:`${Math.min(99, pct)}%`, background:`linear-gradient(90deg,${G.gold},${G.coral})`, borderRadius:2, transition:'width .4s ease' }}/>
       </div>
     </div>
   );
