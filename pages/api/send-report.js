@@ -9,28 +9,37 @@ import jwt from 'jsonwebtoken';
 export const maxDuration = 60; // PDF generation needs up to 60s
 
 // ── Generate PDF via headless Chrome ─────────────────────────────────────────
+const CHROMIUM_URL = 'https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar';
+
 const generatePDF = async (html) => {
-  // Dynamic imports — avoid issues with Vercel edge bundling
-  const chromium  = (await import('@sparticuz/chromium-min')).default;
-  const puppeteer = (await import('puppeteer-core')).default;
+  console.log('[PDF] Starting chromium import...');
+  const chromiumMod  = await import('@sparticuz/chromium-min');
+  const puppeteerMod = await import('puppeteer-core');
+  const chromium     = chromiumMod.default || chromiumMod;
+  const puppeteer    = puppeteerMod.default || puppeteerMod;
 
-  // Chromium binary downloaded at runtime from GitHub (cached in /tmp)
-  const executablePath = await chromium.executablePath(
-    'https://github.com/Sparticuz/chromium/releases/download/v119.0.2/chromium-v119.0.2-pack.tar'
-  );
+  console.log('[PDF] Getting chromium executable path...');
+  const executablePath = await chromium.executablePath(CHROMIUM_URL);
+  console.log('[PDF] Executable path:', executablePath);
 
+  console.log('[PDF] Launching browser...');
   const browser = await puppeteer.launch({
     args:            chromium.args,
-    defaultViewport: chromium.defaultViewport,
+    defaultViewport: { width: 1200, height: 900 },
     executablePath,
-    headless:        'new',
+    headless:        true,
+    ignoreHTTPSErrors: true,
   });
 
   try {
     const page = await browser.newPage();
+    console.log('[PDF] Browser launched, setting content...');
 
-    // Set content and wait for fonts/images to load
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    // Set content — use load instead of networkidle0 to avoid font timeout
+    await page.setContent(html, { waitUntil: 'load', timeout: 25000 });
+    // Wait a moment for fonts to render
+    await new Promise(r => setTimeout(r, 2000));
+    console.log('[PDF] Content loaded, generating PDF...');
 
     // Inject PDF-specific CSS: keep dark background, add footer, page breaks
     await page.addStyleTag({ content: `
@@ -62,10 +71,12 @@ const generatePDF = async (html) => {
       margin: { top: '15mm', right: '0', bottom: '12mm', left: '0' },
     });
 
+    console.log('[PDF] PDF generated, size:', pdf.length, 'bytes');
     return Buffer.from(pdf);
 
   } finally {
     await browser.close();
+    console.log('[PDF] Browser closed');
   }
 };
 
