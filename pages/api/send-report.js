@@ -1,86 +1,12 @@
 // pages/api/send-report.js
-// Generates Ikigai report in HTML and PDF (via headless Chrome).
-// PDF looks identical to the HTML — same dark theme, colors, layout.
-// Both formats sent as email attachments via Resend.
-// PDF has user email in footer on every page.
+// Generates the Ikigai report as HTML and sends it via Resend.
+// HTML attachment opens in any browser with full dark-theme design.
 
 import jwt from 'jsonwebtoken';
 
-export const maxDuration = 60; // PDF generation needs up to 60s
+export const maxDuration = 30;
 
-// ── Generate PDF via headless Chrome ─────────────────────────────────────────
-const CHROMIUM_URL = 'https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar';
-
-const generatePDF = async (html) => {
-  console.log('[PDF] Starting chromium import...');
-  const chromiumMod  = await import('@sparticuz/chromium-min');
-  const puppeteerMod = await import('puppeteer-core');
-  const chromium     = chromiumMod.default || chromiumMod;
-  const puppeteer    = puppeteerMod.default || puppeteerMod;
-
-  console.log('[PDF] Getting chromium executable path...');
-  const executablePath = await chromium.executablePath(CHROMIUM_URL);
-  console.log('[PDF] Executable path:', executablePath);
-
-  console.log('[PDF] Launching browser...');
-  const browser = await puppeteer.launch({
-    args:            chromium.args,
-    defaultViewport: { width: 1200, height: 900 },
-    executablePath,
-    headless:        true,
-    ignoreHTTPSErrors: true,
-  });
-
-  try {
-    const page = await browser.newPage();
-    console.log('[PDF] Browser launched, setting content...');
-
-    // Set content — use load instead of networkidle0 to avoid font timeout
-    await page.setContent(html, { waitUntil: 'load', timeout: 25000 });
-    // Wait a moment for fonts to render
-    await new Promise(r => setTimeout(r, 2000));
-    console.log('[PDF] Content loaded, generating PDF...');
-
-    // Inject PDF-specific CSS: keep dark background, add footer, page breaks
-    await page.addStyleTag({ content: `
-      @page {
-        size: A4 portrait;
-        margin: 18mm 14mm 22mm 14mm;
-      }
-      @media print {
-        /* Override any light-mode print CSS — keep dark theme */
-        body { background: #0e0c1e !important; color: #f2ede2 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .header, .hero, .card, .pull, .orbit, .mantra-box, .circle-card { background: #15132a !important; border-color: #2d2952 !important; }
-        .footer { border-color: #2d2952 !important; }
-        .section { page-break-inside: avoid; }
-      }
-    `});
-
-    const pdf = await page.pdf({
-      format:          'A4',
-      printBackground: true,   // critical — renders background colors
-      preferCSSPageSize: false,
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: `
-        <div style="width:100%;font-size:8px;color:#857da0;font-family:'Inter',sans-serif;
-                    padding:0 14mm;display:flex;justify-content:space-between;align-items:center;">
-          <span>Ikigai Journey · Purposely Learning</span>
-          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
-        </div>`,
-      margin: { top: '15mm', right: '0', bottom: '12mm', left: '0' },
-    });
-
-    console.log('[PDF] PDF generated, size:', pdf.length, 'bytes');
-    return Buffer.from(pdf);
-
-  } finally {
-    await browser.close();
-    console.log('[PDF] Browser closed');
-  }
-};
-
-// ── HTML report generator ────────────────────────────────────────────────────
+// ── HTML report generator ─────────────────────────────────────────────────────
 function generateReportHTML(data, email) {
   const sec  = (title, accent, content) => `
     <div class="section">
@@ -93,7 +19,7 @@ function generateReportHTML(data, email) {
   const card = (content, accent='#2d2952') =>
     `<div class="card" style="border:1px solid ${accent};">${content}</div>`;
 
-  const lbl  = (text, color='#857da0') =>
+  const lbl = (text, color='#857da0') =>
     `<span class="label" style="color:${color};">${text}</span>`;
 
   const safe = v => (v||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -107,9 +33,9 @@ function generateReportHTML(data, email) {
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#0e0c1e;color:#f2ede2;font-family:'Inter',system-ui,sans-serif;line-height:1.65;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{background:#0e0c1e;color:#f2ede2;font-family:'Inter',system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:760px;margin:0 auto;padding:40px 24px;}
-  .section{margin-bottom:48px;page-break-inside:avoid;}
+  .section{margin-bottom:48px;}
   .card{background:#15132a;border-radius:12px;padding:20px 24px;margin-bottom:10px;}
   .label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -125,6 +51,11 @@ function generateReportHTML(data, email) {
   .footer{text-align:center;padding:48px 0 28px;border-top:1px solid #2d2952;}
   .footer p{font-size:14px;color:#857da0;font-style:italic;font-family:'Cormorant Garamond',Georgia,serif;}
   @media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr!important;}.wrap{padding:28px 16px;}.hero{padding:30px 20px;}}
+  @media print{
+    body{background:#fff!important;color:#18162e!important;}
+    .header,.hero,.card,.mantra-box,.circle-card,.orbit-row,.pull-quote{background:#f6f5fa!important;border-color:#ccc8e0!important;}
+    .footer{border-color:#ccc8e0!important;}
+  }
 </style>
 </head>
 <body>
@@ -213,6 +144,27 @@ function generateReportHTML(data, email) {
     ${(p.actions||[]).map(a=>`<p style="font-size:13px;color:#c0b8d4;margin:4px 0;padding-left:14px;position:relative;"><span style="position:absolute;left:0;color:#6aaa92;">→</span>${safe(a)}</p>`).join('')}
   `,'#6aaa92')).join(''))}
 
+  ${sec('Your 5-Person Orbit','#f0a732',[['The Mentor',data.orbit_mentor,'#f0a732'],['The Peer',data.orbit_peer,'#9d91d4'],['The Hire',data.orbit_hire,'#6aaa92'],['The Partner',data.orbit_partner,'#d96b55'],['The Audience',data.orbit_audience,'#c0b8d4']].map(([l,v,c])=>`
+    <div class="orbit-row">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${c};min-width:90px;margin-top:1px;flex-shrink:0;">${l}</span>
+      <p style="font-size:13px;color:#c0b8d4;line-height:1.62;">${safe(v)}</p>
+    </div>`).join(''))}
+
+  ${sec('Your Energy Map','#6aaa92',`
+    <div class="grid2">
+      <div>${card(`${lbl('What feeds you','#6aaa92')}${(data.energy_feeds||[]).map(f=>`<p style="font-size:13px;color:#6aaa92;margin:4px 0;">↑ ${safe(f)}</p>`).join('')}`,'#6aaa92')}</div>
+      <div>${card(`${lbl('What drains you','#d96b55')}${(data.energy_drains||[]).map(d=>`<p style="font-size:13px;color:#d96b55;margin:4px 0;">↓ ${safe(d)}</p>`).join('')}`,'#d96b55')}</div>
+    </div>
+  `)}
+
+  ${sec('12 Months From Now','#9d91d4',card(`
+    <p style="font-size:15px;line-height:1.88;color:#f2ede2;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;">${safe(data.vision_12mo)}</p>
+  `,'#9d91d4'))}
+
+  ${sec('The 5-Year Vision','#d96b55',card(`
+    <p style="font-size:14px;line-height:1.8;color:#f2ede2;">${safe(data.vision_5yr)}</p>
+  `,'#d96b55'))}
+
   ${sec('Your Daily Mantra','#f0a732',`
     <div class="mantra-box">
       <svg viewBox="0 0 60 60" width="36" height="36" style="margin-bottom:16px;" aria-hidden="true">
@@ -226,13 +178,21 @@ function generateReportHTML(data, email) {
     </div>
   `)}
 
-  ${sec('12 Months From Now','#9d91d4',card(`
-    <p style="font-size:15px;line-height:1.88;color:#f2ede2;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;">${safe(data.vision_12mo)}</p>
-  `,'#9d91d4'))}
+  ${sec('Curated For You','#857da0',`
+    <div class="grid2">
+      <div>${lbl('Books')}${(data.books||[]).map(b=>card(`<p style="font-size:13px;font-weight:600;color:#f2ede2;margin-bottom:2px;">${safe(b.title)}</p><p style="font-size:11px;color:#857da0;margin-bottom:6px;">${safe(b.author)}</p><p style="font-size:12px;color:#c0b8d4;line-height:1.55;">${safe(b.why)}</p>`)).join('')}</div>
+      <div>${lbl('Podcasts')}${(data.podcasts||[]).map(p=>card(`<p style="font-size:13px;font-weight:600;color:#f2ede2;margin-bottom:2px;">${safe(p.name)}</p><p style="font-size:11px;color:#857da0;margin-bottom:6px;">${safe(p.host)}</p><p style="font-size:12px;color:#c0b8d4;line-height:1.55;">${safe(p.why)}</p>`)).join('')}</div>
+    </div>
+  `)}
 
-  ${sec('The 5-Year Vision','#d96b55',card(`
-    <p style="font-size:14px;line-height:1.8;color:#f2ede2;">${safe(data.vision_5yr)}</p>
-  `,'#d96b55'))}
+  ${sec('Your Next Steps','#f0a732',`
+    <div class="grid3">
+      ${[['#f0a732','Today',data.next_today],['#9d91d4','This Week',data.next_week],['#6aaa92','This Month',data.next_month]].map(([c,l,v])=>`
+      <div style="background:#15132a;border:1px solid ${c}22;border-radius:12px;padding:20px;border-top:3px solid ${c};">
+        ${lbl(l,c)}<p style="font-size:13px;color:#f2ede2;line-height:1.62;">${safe(v)}</p>
+      </div>`).join('')}
+    </div>
+  `)}
 
   <div class="footer">
     <svg viewBox="0 0 60 60" width="40" height="40" style="margin-bottom:14px;" aria-hidden="true">
@@ -279,55 +239,43 @@ export default async function handler(req, res) {
   console.log('[send-report] recipient:', recipientEmail, '| RESEND set:', !!process.env.RESEND_API_KEY);
   if (!reportData) return res.status(400).json({ error: 'reportData required' });
 
-  // Generate HTML
   const html = generateReportHTML(reportData, recipientEmail);
-
-  // Generate PDF via headless Chrome
-  let pdfBuffer = null;
-  let pdfError  = null;
-  try {
-    console.log('[send-report] Generating PDF via puppeteer...');
-    pdfBuffer = await generatePDF(html);
-    console.log('[send-report] PDF generated:', pdfBuffer.length, 'bytes');
-  } catch (err) {
-    pdfError = err?.message;
-    console.error('[send-report] PDF error:', err?.message);
-  }
 
   let emailSent  = false;
   let emailError = null;
 
   if (recipientEmail && process.env.RESEND_API_KEY) {
     try {
-      const attachments = [
-        { filename: 'ikigai-purpose-report.html', content: Buffer.from(html).toString('base64'), type: 'text/html' },
-        ...(pdfBuffer ? [{ filename: 'ikigai-purpose-report.pdf', content: pdfBuffer.toString('base64'), type: 'application/pdf' }] : []),
-      ];
-
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        },
         body: JSON.stringify({
-          from:        process.env.EMAIL_FROM || 'Ikigai Journey <reports@purposelylearning.com>',
-          to:          recipientEmail,
-          subject:     '🌸 Your Personal Purpose Report — Ikigai Journey',
-          html:        `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+          from:    process.env.EMAIL_FROM || 'Ikigai Journey <reports@purposelylearning.com>',
+          to:      recipientEmail,
+          subject: '🌸 Your Personal Purpose Report — Ikigai Journey',
+          html:    `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
             <h2 style="color:#c17f24;">🌸 Your Ikigai Report is Ready</h2>
-            <p style="color:#444;line-height:1.6;">Your personal purpose report is attached in two formats:</p>
-            <ul style="color:#444;line-height:2;">
-              <li><strong>PDF</strong> — identical to your online report. Print, save, or share.</li>
-              <li><strong>HTML</strong> — open in any browser for the full experience.</li>
-            </ul>
-            <p style="color:#666;font-style:italic;">"${(reportData.ikigai_sentence||'').slice(0,120)}..."</p>
+            <p style="color:#444;line-height:1.7;margin-bottom:16px;">Your full personal purpose report is attached as an HTML file. Open it in any browser to view the complete report with all sections.</p>
+            <p style="color:#666;font-style:italic;line-height:1.6;margin-bottom:20px;">"${safe(reportData.ikigai_sentence||'')}"</p>
+            <p style="color:#888;font-size:13px;">To save as PDF: open the HTML file in your browser → File → Print → Save as PDF.</p>
           </div>`,
-          attachments,
+          attachments: [
+            {
+              filename: 'ikigai-purpose-report.html',
+              content:  Buffer.from(html).toString('base64'),
+              type:     'text/html',
+            },
+          ],
         }),
       });
 
       const emailData = await response.json();
       if (response.ok) {
         emailSent = true;
-        console.log('[send-report] ✅ Email sent | id:', emailData.id, '| attachments:', attachments.length, '| pdf:', !!pdfBuffer);
+        console.log('[send-report] ✅ HTML email sent to:', recipientEmail, '| id:', emailData.id);
       } else {
         emailError = emailData.message || 'Resend error';
         console.error('[send-report] Resend error:', emailData);
@@ -338,7 +286,10 @@ export default async function handler(req, res) {
     }
   } else {
     emailError = !recipientEmail ? 'No email address' : 'RESEND_API_KEY not set';
+    console.warn('[send-report] Skipping:', emailError);
   }
 
-  return res.status(200).json({ ok: true, emailSent, emailError, recipientEmail, html, hasPdf: !!pdfBuffer, pdfError });
+  return res.status(200).json({ ok: true, emailSent, emailError, recipientEmail, html });
 }
+
+function safe(v) { return (v||'').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
