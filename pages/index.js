@@ -1350,6 +1350,51 @@ export default function App() {
     }
   }, []);
 
+  // Restore section summaries from localStorage if app was backgrounded
+  useEffect(() => {
+    try {
+      const savedSums = localStorage.getItem('ikigai_section_summaries');
+      if (savedSums) setSectionSummaries(JSON.parse(savedSums));
+    } catch {}
+    // Restore saved report if browser was closed after generation
+    try {
+      const savedReport = localStorage.getItem('ikigai_saved_report');
+      const savedTok    = localStorage.getItem('ikigai_saved_report_token');
+      if (savedReport && savedTok && savedTok === getToken()) {
+        setReportData(JSON.parse(savedReport));
+        setView('report');
+      }
+    } catch {}
+  }, []);
+
+  // Auto-retry when user returns to app after backgrounding mid-generation
+  useEffect(() => {
+    if (!isGenerating) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        // Stream was likely broken — auto-retry after short delay
+        setTimeout(() => {
+          setIsGenerating(false);
+          setReportError('Browser was minimized — retrying your report now...');
+          setTimeout(() => {
+            setSectionSummaries(sums => {
+              setMessages(msgs => {
+                setReportError(null);
+                setIsGenerating(true);
+                setGenerationMsg('Resuming report — keep this tab open.');
+                generateReport(sums, [...msgs]);
+                return msgs;
+              });
+              return sums;
+            });
+          }, 1200);
+        }, 500);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isGenerating]);
+
   const persistToken = (t) => {
     setAccessToken(t);
     saveToken(t);
@@ -1550,7 +1595,7 @@ export default function App() {
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW') || ['generating your','crafting your','petals are aligned','all 16 answers'].some(k => text.toLowerCase().includes(k))) {
           setIsGenerating(true);
-          setGenerationMsg('Your personal purpose report is being crafted — this takes 2–5 minutes. Do not close this tab. Your results will also be emailed to you.');
+          setGenerationMsg('Your report is being crafted — takes 2–5 minutes. Keep this tab open, do not switch apps. Your results will also be emailed.');
           if (text.includes('GENERATE_REPORT_NOW')) {
             // Capture current messages now (before state updates)
             const msgsSnapshot = [...messages, { role: 'assistant', content: text }];
@@ -1583,6 +1628,7 @@ export default function App() {
   const reset = () => {
     if (!DEMO_MODE) clearToken();
     clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
+    try { localStorage.removeItem('ikigai_section_summaries'); } catch {}
     setAccessToken(null);
     setView('landing');
     setMessages([]);
