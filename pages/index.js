@@ -33,7 +33,12 @@ const G = {
   serif:'var(--serif)', sans:'var(--sans)',
 };
 
-const SP = `You are an Ikigai Guide — warm, precise, editorial. Running a 16-question discovery journey for Filipinos seeking their reason for being.
+const SP = `TESTING SHORTCUT — FOR DEVELOPMENT ONLY:
+If the user sends exactly "QUICK TEST", skip all 16 questions and immediately generate a complete Ikigai report for a fictional Filipino seafarer named Alex Santos: loves organizing and helping people, good at financial discipline and cross-cultural communication, sees fellow seafarers struggling with no savings as the core problem, wants to build a mentoring and detailing business. Output the full IKIGAI_REPORT_START...IKIGAI_REPORT_END JSON immediately with all fields filled.
+
+---
+
+You are an Ikigai Guide — warm, precise, editorial. Running a 16-question discovery journey for Filipinos seeking their reason for being.
 
 ABSOLUTE RULES:
 • Ask ONE question per message. Never two.
@@ -72,13 +77,19 @@ Q13: What are people already paying for in your area of expertise or interest?
 Q14: How does money currently come into your life?
 Q15: What adjacent skills or knowledge could you package — things you know but haven't offered yet?
 Q16: What's a price point you've always thought might be too high — but have never actually tested?
-[After Q16: SECTION 4 SUMMARY → say: "The petals are aligned. Generating your Ikigai report now..."]
+[After Q16: SECTION 4 SUMMARY → say warmly that their answers are captured and the report is being crafted. End with the exact signal: GENERATE_REPORT_NOW]
 
-CRITICAL: In vision_12mo, ALWAYS use "Monday morning" — never Tuesday, Wednesday, or any other day.
+Example of what to say after Section 4 Summary:
+"[Name], all 16 of your answers are now captured — and what I see is remarkable. Your personal purpose report is being crafted now. Please keep this tab open. It will also be sent to your email.
 
-THEN OUTPUT EXACTLY — no text after IKIGAI_REPORT_END:
+GENERATE_REPORT_NOW"
+
+STOP after GENERATE_REPORT_NOW. Do NOT output any JSON. The report is generated separately.
+
+LEGACY SCHEMA (kept for QUICK TEST shortcut only):
 IKIGAI_REPORT_START
 {
+  "user_name":"The user's first name as they gave it",
   "ikigai_sentence":"I [verb] [for whom] so they [outcome] in a way that [unique style]",
   "letter_p1":"Paragraph 1 — who they are. USE THEIR SPECIFIC WORDS.",
   "letter_p2":"Paragraph 2 — pattern noticed. Reference their verbatim phrases.",
@@ -316,6 +327,19 @@ const apiVerifyPayment = async (sessionId) => {
 };
 
 // Send report via email + return HTML for download
+// Log session to Supabase database for admin tracking
+const apiLogSession = async (sessionId, userName, email, durationMinutes, reportJson) => {
+  try {
+    await fetch('/api/log-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, userName, email, durationMinutes, reportJson }),
+    });
+  } catch (err) {
+    console.warn('[log-session] Failed:', err?.message);
+  }
+};
+
 const apiSendReport = async (reportData, token, emailOverride) => {
   try {
     const res = await fetch('/api/send-report', {
@@ -1057,6 +1081,71 @@ const Report = ({ data, onRestart, emailSent = false, token = null, userEmail = 
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Main App ─────────────────────────────────────────────────────────────────
+// Compact report generation system prompt.
+// Used in a FRESH standalone API call — no conversation history.
+// Minimal input = maximum tokens available for full JSON output.
+const REPORT_SP = `You are generating a personal Ikigai report in JSON format.
+Output ONLY the JSON between IKIGAI_REPORT_START and IKIGAI_REPORT_END. No other text before or after.
+Use "Monday morning" in vision_12mo — never any other day.
+Make every field deeply specific to this person's actual words and situation.
+
+IKIGAI_REPORT_START
+{
+  "user_name":"Their first name",
+  "ikigai_sentence":"I [verb] [who] so they [outcome] in a way that [style]",
+  "letter_p1":"2-3 sentences — who they are using their specific words",
+  "letter_p2":"2-3 sentences — the pattern you see across all answers",
+  "letter_question":"One pointed personal question for them",
+  "archetype_name":"The [Specific Name]",
+  "archetype_tagline":"One sentence tagline",
+  "archetype_examples":["Person 1","Person 2","Person 3"],
+  "archetype_superpower":"What this archetype does best",
+  "archetype_kryptonite":"Their blind spot",
+  "love_summary":"2 sentences on what they love",
+  "goodat_summary":"2 sentences on their skills",
+  "worldneeds_summary":"2 sentences on the problem they see",
+  "paidfor_summary":"2 sentences on monetization potential",
+  "niche_who":"Specific target person",
+  "niche_problem":"Specific problem they solve",
+  "niche_differentiator":"What makes them unique",
+  "niche_test_phrase":"1-sentence positioning statement",
+  "one_thing":"The single most important next action",
+  "one_thing_why":"Why this is the one thing",
+  "action_today":"Specific action today",
+  "action_week":"Specific action this week",
+  "action_month":"Specific action this month",
+  "marketing_shift":"How their marketing should change",
+  "sales_shift":"How their sales approach should change",
+  "offer_shift":"How they should package their offer",
+  "say_no_to":["Thing 1","Thing 2","Thing 3","Thing 4","Thing 5"],
+  "pillar1":{"name":"Pillar Name","posts":["Post 1","Post 2","Post 3"]},
+  "pillar2":{"name":"Pillar Name","posts":["Post 1","Post 2","Post 3"]},
+  "pillar3":{"name":"Pillar Name","posts":["Post 1","Post 2","Post 3"]},
+  "path1":{"name":"Path name","projection":"Revenue estimate","actions":["Action 1","Action 2","Action 3"]},
+  "path2":{"name":"Path name","projection":"Revenue estimate","actions":["Action 1","Action 2","Action 3"]},
+  "path3":{"name":"Path name","projection":"Revenue estimate","actions":["Action 1","Action 2","Action 3"]},
+  "orbit_mentor":"Who they need as mentor",
+  "orbit_peer":"Who they need as peer",
+  "orbit_hire":"Who they should hire first",
+  "orbit_partner":"Partnership opportunity",
+  "orbit_audience":"Their ideal audience",
+  "energy_feeds":["Thing 1","Thing 2","Thing 3"],
+  "energy_drains":["Thing 1","Thing 2","Thing 3"],
+  "stop_doing":["Thing 1","Thing 2","Thing 3","Thing 4","Thing 5"],
+  "vision_12mo":"A MONDAY morning sensory scene 12 months from now",
+  "vision_5yr":"Where this leads in 5 years",
+  "pull_quote1":"Powerful quote from their actual answers",
+  "pull_quote2":"Powerful quote from their actual answers",
+  "pull_quote3":"Powerful quote from their actual answers",
+  "mantra":["Line 1","Line 2","Line 3"],
+  "books":[{"title":"Book title","author":"Author","why":"Why it fits them"},{"title":"Book title","author":"Author","why":"Why it fits them"}],
+  "podcasts":[{"name":"Podcast","host":"Host","why":"Why it fits them"},{"name":"Podcast","host":"Host","why":"Why it fits them"}],
+  "next_today":"Concrete next step today",
+  "next_week":"Concrete next step this week",
+  "next_month":"Concrete next step this month"
+}
+IKIGAI_REPORT_END`;
+
 // ── In-App Browser Detector + Block Screen ───────────────────────────────────
 // Detects Facebook, Instagram, Messenger in-app browsers.
 // Shows a full-screen prompt to open in the device's default browser instead.
@@ -1189,7 +1278,8 @@ export default function App() {
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating,   setIsGenerating]   = useState(false);
-  const [sectionsDone,   setSectionsDone]   = useState(0);
+  const [sectionsDone,    setSectionsDone]    = useState(0);
+  const [sectionSummaries,setSectionSummaries] = useState({ s1:'', s2:'', s3:'', s4:'' });
   const [questionNum,    setQuestionNum]    = useState(0);
   const [streamingContent, setStreamingContent] = useState('');
   const [reportError,  setReportError]  = useState(null);
@@ -1292,7 +1382,10 @@ export default function App() {
     setAnswerCount(0);
     setSectionsDone(0);
     setQuestionNum(0);
+    setSectionSummaries({ s1:'', s2:'', s3:'', s4:'' });
     setStreamingContent('');
+    // Track when the session started for duration calculation
+    localStorage.setItem('ikigai_chat_start', Date.now().toString());
     setIsLoading(true);
     try {
       const text = await apiChat(
@@ -1369,12 +1462,21 @@ export default function App() {
       if (detectedQ) {
         setQuestionNum(prev => Math.max(prev, detectedQ));
       }
-      // Detect section completion from summaries
+      // Detect and store section summaries for fresh report generation call
       const tl = text.toLowerCase();
-      if (tl.includes('section 4') && tl.includes('summary')) setSectionsDone(4);
-      else if (tl.includes('section 3') && tl.includes('summary')) setSectionsDone(3);
-      else if (tl.includes('section 2') && tl.includes('summary')) setSectionsDone(2);
-      else if (tl.includes('section 1') && tl.includes('summary')) setSectionsDone(1);
+      if (tl.includes('section 4') && tl.includes('summary')) {
+        setSectionsDone(4);
+        setSectionSummaries(prev => ({ ...prev, s4: text }));
+      } else if (tl.includes('section 3') && tl.includes('summary')) {
+        setSectionsDone(3);
+        setSectionSummaries(prev => ({ ...prev, s3: text }));
+      } else if (tl.includes('section 2') && tl.includes('summary')) {
+        setSectionsDone(2);
+        setSectionSummaries(prev => ({ ...prev, s2: text }));
+      } else if (tl.includes('section 1') && tl.includes('summary')) {
+        setSectionsDone(1);
+        setSectionSummaries(prev => ({ ...prev, s1: text }));
+      }
 
       if (text.includes('IKIGAI_REPORT_START')) {
         const match = text.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
@@ -1394,6 +1496,13 @@ export default function App() {
             clearChat();
             const tok = accessToken || getToken();
             const userEmail = localStorage.getItem('ikigai_user_email') || '';
+            const startTime = parseInt(localStorage.getItem('ikigai_chat_start') || '0');
+            const durationMinutes = startTime ? +((Date.now() - startTime) / 60000).toFixed(1) : null;
+            const userName = json.user_name || null;
+
+            // Log session to Supabase
+            apiLogSession(tok?.slice(-12) || null, userName, userEmail, durationMinutes, json);
+
             console.log('[report] Sending to email:', userEmail);
             apiSendReport(json, tok, userEmail).then(r => {
               if (r.emailSent) setEmailSent(true);
@@ -1415,12 +1524,19 @@ export default function App() {
         }
       } else {
         // Detect if Claude is about to generate the report
-        const generatingKeywords = ['generating your', 'crafting your', 'synthesizing your', 'all 16 answers', 'petals are aligned', 'personal report now'];
-        if (generatingKeywords.some(k => text.toLowerCase().includes(k))) {
+        if (text.includes('GENERATE_REPORT_NOW') || ['generating your','crafting your','petals are aligned','all 16 answers'].some(k => text.toLowerCase().includes(k))) {
           setIsGenerating(true);
-          setGenerationMsg('Your report is being crafted — this takes 30–60 seconds. Do not close this tab. Your results will also be sent to your email.');
+          setGenerationMsg('Your personal purpose report is being crafted — this takes 30–60 seconds. Do not close this tab. Your results will also be emailed to you.');
+          if (text.includes('GENERATE_REPORT_NOW')) {
+            setTimeout(() => {
+              setSectionSummaries(currentSums => {
+                generateReport(currentSums);
+                return currentSums;
+              });
+            }, 600);
+          }
         }
-        // NOTE: Do NOT add another message here.
+        // NOTE: Do NOT add another message here — streaming message already finalized.
         // The streaming placeholder was already finalized with the full text above.
         // Adding here would create duplicate messages after every single response.
       }
@@ -1449,6 +1565,64 @@ export default function App() {
   };
 
   // Production Whisper function — only passed to ChatView when not in demo mode
+  // generateReport() — Fresh API call with only section summaries as context.
+  // This avoids the long conversation history that was consuming all input tokens.
+  const generateReport = async (summaries) => {
+    const tok = accessToken || getToken();
+    const userEmail = localStorage.getItem('ikigai_user_email') || '';
+    const userName  = localStorage.getItem('ikigai_user_name') || '';
+
+    const parts = [
+      summaries.s1 && ('WHAT ' + (userName||'THEY') + ' LOVES:\n' + summaries.s1),
+      summaries.s2 && ('WHAT ' + (userName||'THEY') + ' IS GOOD AT:\n' + summaries.s2),
+      summaries.s3 && 'WHAT THE WORLD NEEDS:\n' + summaries.s3,
+      summaries.s4 && 'WHAT CAN BE PAID FOR:\n' + summaries.s4,
+    ].filter(Boolean).join('\n\n');
+
+    const userMsg = parts
+      ? 'Generate the complete Ikigai report for ' + (userName||'this person') + ' based on their discovery session summaries:\n\n' + parts
+      : 'Generate the complete Ikigai report for ' + (userName||'this person') + ' based on their discovery session.';
+
+    try {
+      console.log('[generateReport] Making fresh report call, summaries:', Object.keys(summaries).filter(k => summaries[k]));
+      const reportText = await apiChat([{ role: 'user', content: userMsg }], tok, 8192, REPORT_SP);
+
+      if (reportText.includes('IKIGAI_REPORT_START')) {
+        const match = reportText.match(/IKIGAI_REPORT_START\s*([\s\S]*?)IKIGAI_REPORT_END/);
+        if (match) {
+          const json = JSON.parse(match[1].trim());
+          const startTime = parseInt(localStorage.getItem('ikigai_chat_start') || '0');
+          const durationMinutes = startTime ? +((Date.now() - startTime) / 60000).toFixed(1) : null;
+
+          localStorage.setItem('ikigai_saved_report', JSON.stringify(json));
+          localStorage.setItem('ikigai_saved_report_token', tok || '');
+          if (json.user_name) localStorage.setItem('ikigai_user_name', json.user_name);
+
+          setReportData(json);
+          setIsGenerating(false);
+          setReportError(null);
+          clearChat();
+
+          apiLogSession(tok?.slice(-12)||null, json.user_name||userName, userEmail, durationMinutes, json);
+          apiSendReport(json, tok, userEmail).then(r => {
+            if (r.emailSent) setEmailSent(true);
+            console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError);
+          });
+
+          setTimeout(() => setView('report'), 800);
+        } else {
+          throw new Error('JSON truncated — IKIGAI_REPORT_END not found');
+        }
+      } else {
+        throw new Error('IKIGAI_REPORT_START not in response');
+      }
+    } catch (err) {
+      console.error('[generateReport] Error:', err?.message);
+      setIsGenerating(false);
+      setReportError('Report generation failed — type "generate my report" to retry. Error: ' + err.message);
+    }
+  };
+
   const handleResume = () => { if (!resumeData) return; setMessages(resumeData.messages); setAnswerCount(resumeData.answerCount); setResumeData(null); setView('chat'); };
   const handleDismissResume = () => { clearChat(); setResumeData(null); };
 
