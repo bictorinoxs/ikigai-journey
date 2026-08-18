@@ -13,6 +13,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'NEXT_PUBLIC_BASE_URL not set in environment variables' });
   }
 
+  // Accept custom amount from frontend (when promo code applied)
+  // Falls back to full price if not provided
+  const FULL_PRICE = 49900; // ₱499 in centavos — live price
+  const { amount: customAmount } = req.body || {};
+  const amount = (customAmount && customAmount > 0) ? customAmount : FULL_PRICE;
+
   const auth = Buffer.from(`${process.env.PAYMONGO_SECRET_KEY}:`).toString('base64');
 
   try {
@@ -45,7 +51,7 @@ export default async function handler(req, res) {
             line_items: [
               {
                 currency: 'PHP',
-                amount: 500,          // ₱5 in centavos — LIVE TEST ONLY, change back to 39900 (₱399) before real launch          // ₱399 in centavos
+                amount: amount,          // dynamic — full price or promo discounted price          // ₱399 in centavos
                 name: 'Ikigai Journey — Discover Your Purpose',
                 description: 'Your personal 20-section purpose report — deeply specific to your answers.',
                 quantity: 1,

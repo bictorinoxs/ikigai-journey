@@ -13,9 +13,10 @@ export default async function handler(req, res) {
     email,
     durationMinutes,
     reportJson,
+    promoCode,
   } = req.body;
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -44,6 +45,7 @@ export default async function handler(req, res) {
         archetype:        reportJson.archetype_name || null,
         ikigai_sentence:  reportJson.ikigai_sentence || null,
         report_json:      reportJson,
+        promo_code:       promoCode || null,
       }),
     });
 

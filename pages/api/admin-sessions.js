@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/sessions?select=id,created_at,user_name,email,duration_minutes,archetype,ikigai_sentence,session_id&order=created_at.desc&limit=200`,
+      `${SUPABASE_URL}/rest/v1/sessions?select=id,created_at,user_name,email,duration_minutes,archetype,ikigai_sentence,session_id,promo_code&order=created_at.desc&limit=200`,
       {
         headers: {
           'apikey':        SUPABASE_KEY,

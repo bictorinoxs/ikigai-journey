@@ -343,10 +343,11 @@ const apiVerifyPayment = async (sessionId) => {
 // Log session to Supabase database for admin tracking
 const apiLogSession = async (sessionId, userName, email, durationMinutes, reportJson) => {
   try {
+    const promoCode = (typeof window !== 'undefined' && localStorage.getItem('ikigai_promo_code')) || null;
     await fetch('/api/log-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, userName, email, durationMinutes, reportJson }),
+      body: JSON.stringify({ sessionId, userName, email, durationMinutes, reportJson, promoCode }),
     });
   } catch (err) {
     console.warn('[log-session] Failed:', err?.message);
@@ -520,14 +521,14 @@ const Landing = ({ onStart, isVerifying = false }) => (
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
       <div style={{ marginBottom:8 }}>
         <span style={{ fontSize:18, color:G.muted, fontFamily:G.serif, textDecoration:'line-through', marginRight:10 }}>₱600</span>
-        <span style={{ fontSize:34, fontWeight:700, color:G.gold }}>₱399</span>
+        <span style={{ fontSize:34, fontWeight:700, color:G.gold }}>₱499</span>
       </div>
       <div style={{ display:'inline-block', background:'#2a1a08', border:`1px solid ${G.gold}50`, borderRadius:20, padding:'4px 14px', marginBottom:12 }}>
         <span style={{ fontSize:12, color:G.gold, fontFamily:G.sans, fontWeight:600, letterSpacing:'0.5px' }}>🔥 Limited Time Offer</span>
       </div>
       <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
-        {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱399'}
+        {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱499'}
       </button>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · GCash · Maya · Credit/Debit Card</p>
       <p style={{ fontSize:11, color:G.muted, marginTop:6, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
@@ -569,6 +570,11 @@ const Payment = ({ onSuccess, onBack }) => {
     setEmailErr('');
     localStorage.setItem('ikigai_user_email', email);
     const amount = promoResult?.discountedAmount || null;
+    if (promoResult?.code) {
+      localStorage.setItem('ikigai_promo_code', promoResult.code);
+    } else {
+      localStorage.removeItem('ikigai_promo_code');
+    }
     setLoading(true);
     setTimeout(() => { setLoading(false); onSuccess(email, amount); }, 1800);
   };
@@ -590,7 +596,7 @@ const Payment = ({ onSuccess, onBack }) => {
             {promoResult ? (
               <>
                 <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
-                  <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱399</span>
+                  <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
                   <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱{promoResult.finalPesos}</span>
                 </div>
                 <div style={{ fontSize:12, color:G.sage, marginTop:4 }}>🎉 {promoResult.label} — you save ₱{promoResult.savingPesos}</div>
@@ -599,7 +605,7 @@ const Payment = ({ onSuccess, onBack }) => {
               <>
                 <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
                   <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
-                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
+                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱499</span>
                 </div>
                 <div style={{ fontSize:11, color:G.muted, marginTop:4 }}>One-time · Instant access · No subscription</div>
               </>
@@ -688,7 +694,7 @@ const Payment = ({ onSuccess, onBack }) => {
             disabled={loading}
             style={{ width:'100%', background:loading?G.brd:G.gold, color:loading?G.muted:G.bg, border:'none', borderRadius:10, padding:'15px', fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', fontFamily:G.sans, transition:'all .2s' }}
           >
-            {loading ? '⌛ Preparing your QR code...' : `Continue to Payment — ₱${promoResult ? promoResult.finalPesos : 399}`}
+            {loading ? '⌛ Preparing your QR code...' : `Continue to Payment — ₱${promoResult ? promoResult.finalPesos : 499}`}
           </button>
 
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:10, lineHeight:1.6, fontFamily:G.sans }}>
@@ -1782,7 +1788,7 @@ export default function App() {
   const reset = () => {
     if (!DEMO_MODE) clearToken();
     clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
-    try { localStorage.removeItem('ikigai_section_summaries'); } catch {}
+    try { localStorage.removeItem('ikigai_section_summaries'); localStorage.removeItem('ikigai_promo_code'); } catch {}
     setAccessToken(null);
     setView('landing');
     setMessages([]);

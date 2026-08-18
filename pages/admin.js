@@ -104,7 +104,7 @@ export default function Admin() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${G.brd}` }}>
-                  {['Date & Time (PH)', 'Name', 'Email', 'Duration', 'Archetype', 'Ikigai Sentence'].map(h => (
+                  {['Date & Time (PH)', 'Name', 'Email', 'Duration', 'Promo', 'Archetype', 'Ikigai Sentence'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: G.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.8px', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -123,6 +123,7 @@ export default function Admin() {
                       <td style={{ padding: '12px 14px', color: G.sage, whiteSpace: 'nowrap' }}>
                         {s.duration_minutes ? `${s.duration_minutes} min` : '—'}
                       </td>
+                      <td style={{ padding: '12px 14px', color: G.lav, fontFamily:'monospace', fontSize:12 }}>{s.promo_code || '—'}</td>
                       <td style={{ padding: '12px 14px', color: G.gold }}>{s.archetype || '—'}</td>
                       <td style={{ padding: '12px 14px', color: G.soft, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {s.ikigai_sentence ? `"${s.ikigai_sentence}"` : '—'}
@@ -130,7 +131,7 @@ export default function Admin() {
                     </tr>
                     {expandId === s.id && (
                       <tr key={`exp-${s.id}`} style={{ background: G.surf2 }}>
-                        <td colSpan={6} style={{ padding: '16px 24px' }}>
+                        <td colSpan={7} style={{ padding: '16px 24px' }}>
                           <p style={{ color: G.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Full Ikigai Sentence</p>
                           <p style={{ color: G.gold, fontSize: 14, fontStyle: 'italic', lineHeight: 1.6, marginBottom: 12 }}>"{s.ikigai_sentence}"</p>
                           <p style={{ color: G.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 6 }}>Session ID</p>
