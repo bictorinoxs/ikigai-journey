@@ -645,10 +645,10 @@ const Payment = ({ onSuccess, onBack }) => {
             <ol style={{ paddingLeft:18, margin:0 }}>
               {[
                 'Click the button below',
-                'A QR code will appear on the next page',
+                'A QR code will appear on the next page — keep that page open',
                 'Open GCash, Maya, BPI, BDO, or any banking app',
                 'Tap Scan QR or Pay QR and scan the code',
-                'Your journey unlocks automatically after payment',
+                'The page auto-loads your journey once payment is verified',
               ].map((step, i) => (
                 <li key={i} style={{ fontSize:12, color:G.soft, lineHeight:1.75, fontFamily:G.sans }}>{step}</li>
               ))}
@@ -699,7 +699,7 @@ const Payment = ({ onSuccess, onBack }) => {
 
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:10, lineHeight:1.6, fontFamily:G.sans }}>
             🔒 Secured by PayMongo · QR Ph / InstaPay<br/>
-            Keep this page open — it redirects automatically after payment.
+            After paying, the PayMongo page will automatically load your report — keep it open and don't close the tab.
           </p>
         </div>
       </div>

@@ -53,7 +53,7 @@ export default async function handler(req, res) {
                 currency: 'PHP',
                 amount: amount,          // dynamic — full price or promo discounted price          // ₱399 in centavos
                 name: 'Ikigai Journey — Discover Your Purpose',
-                description: 'Your personal 20-section purpose report — deeply specific to your answers.',
+                description: 'Your personal 20-section purpose report. ⏳ This page will automatically continue once your payment is verified — please keep this tab open.',
                 quantity: 1,
               },
             ],
