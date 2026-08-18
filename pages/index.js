@@ -81,7 +81,16 @@ Q13: What are people already paying for in your area of expertise or interest?
 Q14: How does money currently come into your life?
 Q15: What adjacent skills or knowledge could you package — things you know but haven't offered yet?
 Q16: What's a price point you've always thought might be too high — but have never actually tested?
-[After Q16: SECTION 4 SUMMARY → say warmly that their answers are captured and the report is being crafted. End with the exact signal: GENERATE_REPORT_NOW]
+CRITICAL REPORT GATE — READ CAREFULLY:
+You must NEVER write the words GENERATE_REPORT_NOW until ALL of the following are true:
+  1. You have asked and received answers to all 16 questions (Q1 through Q16)
+  2. You have delivered SECTION 1 SUMMARY, SECTION 2 SUMMARY, SECTION 3 SUMMARY, and SECTION 4 SUMMARY
+  3. The user has completed Section 4 (What You Can Be Paid For)
+
+If you are still in Section 1, 2, or 3 — do NOT write GENERATE_REPORT_NOW under any circumstance.
+Never write GENERATE_REPORT_NOW as an example, a preview, or in an explanation. Only as the final signal after Section 4 Summary.
+
+[After Q16 AND Section 4 Summary only: say warmly that their answers are captured and the report is being crafted. End with the exact signal on its own line: GENERATE_REPORT_NOW]
 
 Example of what to say after Section 4 Summary:
 "[Name], all 16 of your answers are now captured — and what I see is remarkable. Your personal purpose report is being crafted now. Please keep this tab open. It will also be sent to your email.
@@ -311,8 +320,8 @@ const apiWhisper = async (blob, language, token) => {
 };
 
 // Payment: create PayMongo checkout session
-const apiCreateCheckout = async () => {
-  const res = await fetch('/api/payment/create-checkout', { method: 'POST' });
+const apiCreateCheckout = async (amount) => {
+  const res = await fetch('/api/payment/create-checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(amount?{amount}:{}) });
   const d   = await res.json();
   if (!res.ok) throw new Error(d.error || 'Could not create checkout');
   return d; // { checkoutUrl, sessionId }
@@ -530,11 +539,27 @@ const Landing = ({ onStart, isVerifying = false }) => (
 //  PAYMENT VIEW (simulated)
 // ─────────────────────────────────────────────────────────────────────────────
 const Payment = ({ onSuccess, onBack }) => {
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail]     = useState('');
-  const [emailErr, setEmailErr] = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [email,         setEmail]         = useState('');
+  const [emailErr,      setEmailErr]      = useState('');
+  const [promoCode,     setPromoCode]     = useState('');
+  const [promoResult,   setPromoResult]   = useState(null);
+  const [promoChecking, setPromoChecking] = useState(false);
+  const [promoErr,      setPromoErr]      = useState('');
 
-  const validateEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+  const applyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoChecking(true); setPromoErr(''); setPromoResult(null);
+    try {
+      const res  = await fetch('/api/validate-promo', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code: promoCode }) });
+      const data = await res.json();
+      if (data.valid) { setPromoResult(data); }
+      else { setPromoErr(data.error || 'Invalid promo code'); }
+    } catch { setPromoErr('Could not validate. Try again.'); }
+    setPromoChecking(false);
+  };
 
   const pay = () => {
     if (!validateEmail(email)) {
@@ -542,10 +567,10 @@ const Payment = ({ onSuccess, onBack }) => {
       return;
     }
     setEmailErr('');
-    // Save email to localStorage before redirecting
     localStorage.setItem('ikigai_user_email', email);
+    const amount = promoResult?.discountedAmount || null;
     setLoading(true);
-    setTimeout(() => { setLoading(false); onSuccess(email); }, 1800);
+    setTimeout(() => { setLoading(false); onSuccess(email, amount); }, 1800);
   };
   return (
     <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:G.sans }}>
@@ -561,12 +586,51 @@ const Payment = ({ onSuccess, onBack }) => {
           </div>
 
           {/* Price */}
-          <div style={{ background:G.surf2, borderRadius:10, padding:'14px 20px', textAlign:'center', marginBottom:20, border:`1px solid ${G.brd}` }}>
-            <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
-              <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
-              <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
+          <div style={{ background:G.surf2, borderRadius:10, padding:'14px 20px', textAlign:'center', marginBottom:16, border:`1px solid ${G.brd}` }}>
+            {promoResult ? (
+              <>
+                <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
+                  <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱399</span>
+                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱{promoResult.finalPesos}</span>
+                </div>
+                <div style={{ fontSize:12, color:G.sage, marginTop:4 }}>🎉 {promoResult.label} — you save ₱{promoResult.savingPesos}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
+                  <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
+                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
+                </div>
+                <div style={{ fontSize:11, color:G.muted, marginTop:4 }}>One-time · Instant access · No subscription</div>
+              </>
+            )}
+          </div>
+
+          {/* Promo code */}
+          <div style={{ marginBottom:16 }}>
+            <label style={{ display:'block', fontSize:12, color:G.muted, fontFamily:G.sans, marginBottom:6, textTransform:'uppercase', letterSpacing:'1px' }}>
+              Promo Code <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:G.muted }}>(optional)</span>
+            </label>
+            <div style={{ display:'flex', gap:8 }}>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoResult(null); setPromoErr(''); }}
+                onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                placeholder="ENTER CODE"
+                disabled={!!promoResult}
+                style={{ flex:1, background:promoResult?G.surf:G.surf2, border:`1px solid ${promoResult?G.sage:promoErr?G.coral:G.brd}`, borderRadius:10, padding:'11px 14px', color:G.cream, fontSize:13, fontFamily:G.sans, outline:'none', letterSpacing:'1px' }}
+              />
+              {promoResult ? (
+                <button onClick={() => { setPromoResult(null); setPromoCode(''); setPromoErr(''); }} style={{ background:G.surf2, border:`1px solid ${G.brd}`, borderRadius:10, padding:'11px 14px', color:G.muted, fontSize:12, cursor:'pointer', fontFamily:G.sans }}>Remove</button>
+              ) : (
+                <button onClick={applyPromo} disabled={promoChecking || !promoCode.trim()} style={{ background:G.gold, border:'none', borderRadius:10, padding:'11px 18px', color:G.bg, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:G.sans, opacity:promoCode.trim()?1:0.5 }}>
+                  {promoChecking ? '...' : 'Apply'}
+                </button>
+              )}
             </div>
-            <div style={{ fontSize:11, color:G.muted, marginTop:4 }}>One-time · Instant access · No subscription</div>
+            {promoErr    && <p style={{ fontSize:11, color:G.coral, marginTop:5, fontFamily:G.sans }}>{promoErr}</p>}
+            {promoResult && <p style={{ fontSize:11, color:G.sage,  marginTop:5, fontFamily:G.sans }}>✅ Code applied — {promoResult.label}</p>}
           </div>
 
           {/* QR instruction */}
@@ -624,7 +688,7 @@ const Payment = ({ onSuccess, onBack }) => {
             disabled={loading}
             style={{ width:'100%', background:loading?G.brd:G.gold, color:loading?G.muted:G.bg, border:'none', borderRadius:10, padding:'15px', fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', fontFamily:G.sans, transition:'all .2s' }}
           >
-            {loading ? '⌛ Preparing your QR code...' : 'Continue to Payment — ₱399'}
+            {loading ? '⌛ Preparing your QR code...' : `Continue to Payment — ₱${promoResult ? promoResult.finalPesos : 399}`}
           </button>
 
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:10, lineHeight:1.6, fontFamily:G.sans }}>
@@ -702,8 +766,40 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
     { label:'What You Can Be Paid For', range:[13,16],color:G.sage  },
   ];
 
+  // Current section for the mobile header
+  const currentSection = sections.find(s => questionNum >= s.range[0] && questionNum <= s.range[1]) || sections[0];
+  const displayQ = questionNum > 0 ? questionNum : 1;
+
   return (
     <div className="ikigai-chat-shell" style={{ background:G.bg, height:'100vh', display:'flex', overflow:'hidden', fontFamily:G.sans }}>
+      {/* Mobile progress header — hidden on desktop, sidebar shows it there */}
+      <div className="ikigai-mobile-progress" style={{ display:'none' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <PetalMark size={20}/>
+            <span style={{ fontSize:13, fontWeight:700, color:currentSection.color, fontFamily:G.sans }}>
+              {currentSection.label}
+            </span>
+          </div>
+          <span style={{ fontSize:14, fontWeight:700, color:G.gold, fontFamily:G.sans }}>
+            {displayQ}<span style={{ color:G.muted, fontWeight:400, fontSize:12 }}> / 16</span>
+          </span>
+        </div>
+        <div style={{ height:4, background:G.surf2, borderRadius:2, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${progress}%`, background:`linear-gradient(90deg, ${currentSection.color}, ${G.gold})`, borderRadius:2, transition:'width .5s ease' }}/>
+        </div>
+        <div style={{ display:'flex', gap:4, marginTop:7 }}>
+          {sections.map((s, si) => {
+            const [start, end] = s.range;
+            const isDone   = qNum >= end;
+            const isActive = qNum >= start - 1 && qNum < end;
+            return (
+              <div key={si} style={{ flex:1, height:3, borderRadius:2, background: isDone ? s.color : isActive ? s.color + '80' : G.surf2, transition:'background .3s' }}/>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Sidebar */}
       <div className="ikigai-chat-sidebar" style={{ width:214, borderRight:`1px solid ${G.brd}`, padding:'18px 16px', display:'flex', flexDirection:'column', flexShrink:0, background:G.surf }}>
         <div className="ikigai-chat-sidebar-brand" style={{ display:'flex', alignItems:'center', gap:9, marginBottom:26 }}>
@@ -711,9 +807,11 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           <span style={{ fontSize:13, fontWeight:700, color:G.gold, fontFamily:G.serif }}>Ikigai Journey</span>
         </div>
         <div style={{ marginBottom:24 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:6 }}>
             <span style={{ fontSize:10, color:G.muted, textTransform:'uppercase', letterSpacing:'1px' }}>Progress</span>
-            <span style={{ fontSize:10, color:G.gold }}>{Math.round(progress)}%</span>
+            <span style={{ fontSize:13, color:G.gold, fontWeight:700 }}>
+              {displayQ}<span style={{ color:G.muted, fontWeight:400, fontSize:11 }}> / 16</span>
+            </span>
           </div>
           <div style={{ height:3, background:G.surf2, borderRadius:2 }}>
             <div style={{ height:'100%', width:`${progress}%`, background:G.gold, borderRadius:2, transition:'width .5s ease' }}/>
@@ -1313,10 +1411,20 @@ export default function App() {
   const [resumeData,   setResumeData]   = useState(null);
   const [emailSent,    setEmailSent]    = useState(false);
   const endRef = useRef(null);
+  // Refs mirror state so event handlers always read current values (no stale closures)
+  const isGeneratingRef = useRef(false);
+  const genStartedAtRef = useRef(0);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // Keep refs in sync — event listeners read these, not stale state
+  useEffect(() => {
+    isGeneratingRef.current = isGenerating;
+    if (isGenerating && !genStartedAtRef.current) genStartedAtRef.current = Date.now();
+    if (!isGenerating) genStartedAtRef.current = 0;
+  }, [isGenerating]);
 
   // Detect in-app browser (Facebook, Instagram, Messenger) on mount
   useEffect(() => {
@@ -1367,33 +1475,45 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Auto-retry when user returns to app after backgrounding mid-generation
+  // Auto-retry ONLY if the app was backgrounded during actual report generation.
+  // Uses refs so the handler always reads current state, never a stale closure.
   useEffect(() => {
-    if (!isGenerating) return;
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        // Stream was likely broken — auto-retry after short delay
-        setTimeout(() => {
-          setIsGenerating(false);
-          setReportError('Browser was minimized — retrying your report now...');
-          setTimeout(() => {
-            setSectionSummaries(sums => {
-              setMessages(msgs => {
-                setReportError(null);
-                setIsGenerating(true);
-                setGenerationMsg('Resuming report — keep this tab open.');
-                generateReport(sums, [...msgs]);
-                return msgs;
-              });
-              return sums;
-            });
-          }, 1200);
-        }, 500);
+      if (document.visibilityState !== 'visible') return;
+
+      // Guard 1: must actually be generating right now
+      if (!isGeneratingRef.current) return;
+
+      // Guard 2: generation must have been running at least 8s
+      // (prevents firing on quick tab switches right as generation starts)
+      const elapsed = genStartedAtRef.current ? Date.now() - genStartedAtRef.current : 0;
+      if (elapsed < 8000) {
+        console.log('[visibility] Returned too soon (' + elapsed + 'ms) — letting stream continue');
+        return;
       }
+
+      console.log('[visibility] Returned after ' + elapsed + 'ms during generation — retrying');
+      setTimeout(() => {
+        setIsGenerating(false);
+        setReportError('Browser was minimized — resuming your report...');
+        setTimeout(() => {
+          setSectionSummaries(sums => {
+            setMessages(msgs => {
+              setReportError(null);
+              setIsGenerating(true);
+              setGenerationMsg('Resuming your report — keep this tab open.');
+              generateReport(sums, [...msgs]);
+              return msgs;
+            });
+            return sums;
+          });
+        }, 1200);
+      }, 500);
     };
+
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [isGenerating]);
+  }, []); // empty deps — handler uses refs, so it never goes stale
 
   // Screen Wake Lock — keeps mobile screen on during report generation
   // Prevents screen timeout from interrupting the 2-5 minute generation
@@ -1461,10 +1581,10 @@ export default function App() {
   };
 
   // Called when user submits email on payment page and clicks Continue
-  const handlePaymentContinue = async (email) => {
+  const handlePaymentContinue = async (email, amount) => {
     if (email) localStorage.setItem('ikigai_user_email', email);
     try {
-      const { checkoutUrl, sessionId } = await apiCreateCheckout();
+      const { checkoutUrl, sessionId } = await apiCreateCheckout(amount);
       localStorage.setItem('ikigai_pending_session', sessionId);
       window.location.href = checkoutUrl;
     } catch (err) {
@@ -1542,7 +1662,7 @@ export default function App() {
 
         // Show generation overlay when Claude signals it
         const lower = partial.toLowerCase();
-        const isGenKeyword = ['generating', 'crafting your', 'synthesizing', 'all 16 answers', 'petals are aligned', 'ikigai_report_start'].some(k => lower.includes(k));
+        const isGenKeyword = lower.includes('generate_report_now');
         if (isGenKeyword && !partial.includes('IKIGAI_REPORT_END')) {
           setIsGenerating(true);
           setGenerationMsg('Your report is being crafted — this takes 2–5 minutes. Do not close this tab. Results will be emailed to you.');
@@ -1620,10 +1740,17 @@ export default function App() {
         }
       } else {
         // Detect if Claude is about to generate the report
-        if (text.includes('GENERATE_REPORT_NOW') || ['generating your','crafting your','petals are aligned','all 16 answers'].some(k => text.toLowerCase().includes(k))) {
+        if (text.includes('GENERATE_REPORT_NOW')) {
           setIsGenerating(true);
           setGenerationMsg('Your report is being crafted — takes 2–5 minutes. Keep this tab open, do not switch apps. Your results will also be emailed.');
           if (text.includes('GENERATE_REPORT_NOW')) {
+            // SAFETY GATE: ignore premature triggers before Section 3 is done
+            if (sectionsDone < 3 && newCount < 14) {
+              console.warn('[report] Ignoring premature GENERATE_REPORT_NOW — sectionsDone:', sectionsDone, 'answerCount:', newCount);
+              setIsGenerating(false);
+              setGenerationMsg('');
+              return;
+            }
             // Capture current messages now (before state updates)
             const msgsSnapshot = [...messages, { role: 'assistant', content: text }];
             setTimeout(() => {

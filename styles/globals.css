@@ -291,3 +291,42 @@ textarea:focus, input:focus {
 @media (max-width: 480px) {
   body { font-size: 15px; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE PROGRESS HEADER
+   Shows "Question X / 16" + section name + progress bar on small screens.
+   Desktop uses the sidebar instead.
+───────────────────────────────────────────────────────────────────────── */
+
+/* Hidden by default (desktop uses sidebar) */
+.ikigai-mobile-progress { display: none !important; }
+
+@media (max-width: 768px) {
+  /* Chat shell becomes vertical so the header sits on top */
+  .ikigai-chat-shell {
+    flex-direction: column !important;
+  }
+
+  /* Show the mobile progress header */
+  .ikigai-mobile-progress {
+    display: block !important;
+    background: var(--surf);
+    border-bottom: 1px solid var(--brd);
+    padding: 12px 18px 14px !important;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  /* Hide the desktop sidebar entirely on mobile */
+  .ikigai-chat-sidebar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .ikigai-mobile-progress {
+    padding: 10px 14px 12px !important;
+  }
+}
