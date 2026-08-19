@@ -80,11 +80,11 @@ Q7: What's a skill you have that most people find genuinely difficult?
 Q8: What's your unfair advantage — natural to you but hard for most?
 [After Q8: SECTION 2 SUMMARY]
 
-SECTION 3 — WHAT THE WORLD NEEDS (Q9–Q12):
-Q9: What problem do you see — in work, community, or life — that makes you genuinely angry?
-Q10: Who do you see struggling with a problem that has no good solution yet?
-Q11: What's broken in your world that nobody seems to be fixing?
-Q12: Where do you see the biggest opportunity in the Philippines or your world in the next 3 years?
+SECTION 3 — WHAT YOU COULD FIX (Q9–Q12):
+Q9: What's something broken that you keep noticing — the kind of thing that makes you think, "I could fix this"?
+Q10: Who are the people that's stuck with a problem you think you could actually fix?
+Q11: What's something in your industry or community that's broken, and you're the kind of person who could fix it, if given the chance?
+Q12: If you had the next 3 years to fix one thing, what would it be — and why would it matter most?
 [After Q12: SECTION 3 SUMMARY]
 
 SECTION 4 — WHAT YOU CAN BE PAID FOR (Q13–Q16):
@@ -414,8 +414,8 @@ const IkigaiDiagram = () => (
     <text x="180" y="20"  textAnchor="middle" fill="var(--gold)"  fontSize="19" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
     <text x="50"  y="228" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You're</text>
     <text x="50"  y="248" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">Good At</text>
-    <text x="310" y="228" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">What the</text>
-    <text x="310" y="248" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">World Needs</text>
+    <text x="310" y="228" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">You Could</text>
+    <text x="310" y="248" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">Fix</text>
     <text x="180" y="334" textAnchor="middle" fill="var(--sage)"  fontSize="17" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
   </svg>
 );
@@ -790,7 +790,7 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
   const sections = [
     { label:'What You Love',            range:[1,4],  color:G.gold  },
     { label:"What You're Good At",      range:[5,8],  color:G.lav   },
-    { label:'What the World Needs',     range:[9,12], color:G.coral },
+    { label:'What You Could Fix',     range:[9,12], color:G.coral },
     { label:'What You Can Be Paid For', range:[13,16],color:G.sage  },
   ];
 
@@ -907,10 +907,10 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           </div>
         )}
         {awaitingContinue && (
-          <div style={{ background:G.surf2, borderTop:`1px solid ${G.gold}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:10 }}>
-            <PetalMark size={18}/>
-            <p style={{ fontSize:12, color:G.gold, fontFamily:G.sans, margin:0, fontWeight:600 }}>
-              Ready for more? Type <strong>"continue"</strong> below to unlock the rest of your journey.
+          <div style={{ background:`linear-gradient(135deg, ${G.gold}22, ${G.surf2})`, borderTop:`2px solid ${G.gold}`, padding:'18px 24px', display:'flex', alignItems:'center', gap:14 }}>
+            <PetalMark size={30} animated/>
+            <p style={{ fontSize:16, color:G.cream, fontFamily:G.sans, margin:0, fontWeight:600, lineHeight:1.4 }}>
+              Ready for more? Type <strong style={{ color:G.gold, fontSize:17 }}>"continue"</strong> below to unlock the rest of your journey.
             </p>
           </div>
         )}
@@ -1027,7 +1027,7 @@ const Report = ({ data, onRestart, emailSent = false, token = null, userEmail = 
 
         <Sec title="The Four Circles" accent={G.muted}>
           <div className="print-stack ikigai-report-grid-2" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            {[[G.gold,'What You Love',data.love_summary],[G.lav,"What You're Good At",data.goodat_summary],[G.coral,'What the World Needs',data.worldneeds_summary],[G.sage,'What You Can Be Paid For',data.paidfor_summary]].map(([c,l,t],i)=>(
+            {[[G.gold,'What You Love',data.love_summary],[G.lav,"What You're Good At",data.goodat_summary],[G.coral,'What You Could Fix',data.worldneeds_summary],[G.sage,'What You Can Be Paid For',data.paidfor_summary]].map(([c,l,t],i)=>(
               <div key={i} style={{ background:G.surf, border:`1px solid ${c}20`, borderRadius:10, padding:18, borderTop:`3px solid ${c}` }}>
                 <Lbl text={l} c={c}/><p style={{ fontSize:13, lineHeight:1.72, color:G.soft, margin:0 }}>{t}</p>
               </div>
@@ -1319,6 +1319,10 @@ const isIOS     = () => typeof window !== 'undefined' && /iPhone|iPad|iPod/i.tes
 
 const InAppBrowserBlock = () => {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // Short, clean URL for display/copying — the full currentUrl (with any
+  // query params) is still used below for the Chrome intent so the exact
+  // page reopens correctly; users just don't need to see all of that.
+  const displayUrl = 'https://app.purposelylearning.com';
 
   const openInChrome = () => {
     // Android intent to open in Chrome
@@ -1382,7 +1386,7 @@ const InAppBrowserBlock = () => {
 
       <p style={{ color:G.muted, fontSize:11, marginTop:20, lineHeight:1.6 }}>
         Or copy this link and paste it in Chrome or Safari:<br/>
-        <span style={{ color:G.gold, wordBreak:'break-all', fontSize:11 }}>{currentUrl}</span>
+        <span style={{ color:G.gold, wordBreak:'break-all', fontSize:11 }}>{displayUrl}</span>
       </p>
     </div>
   );

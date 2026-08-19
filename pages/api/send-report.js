@@ -107,7 +107,7 @@ function generateReportHTML(data, email) {
 
   ${sec('The Four Circles','#857da0',`
     <div class="grid2">
-      ${[['#f0a732','What You Love',data.love_summary],['#9d91d4',"What You're Good At",data.goodat_summary],['#d96b55','What the World Needs',data.worldneeds_summary],['#6aaa92','What You Can Be Paid For',data.paidfor_summary]].map(([c,l,t])=>`
+      ${[['#f0a732','What You Love',data.love_summary],['#9d91d4',"What You're Good At",data.goodat_summary],['#d96b55','What You Could Fix',data.worldneeds_summary],['#6aaa92','What You Can Be Paid For',data.paidfor_summary]].map(([c,l,t])=>`
       <div class="circle-card" style="border:1px solid ${c}20;border-top:3px solid ${c};">
         ${lbl(l,c)}<p style="font-size:13px;line-height:1.72;color:#c0b8d4;">${safe(t)}</p>
       </div>`).join('')}
