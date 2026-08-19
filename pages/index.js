@@ -760,7 +760,7 @@ const GenProgressBar = () => {
   );
 };
 
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null }) => {
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null, paywallSoon=false }) => {
   // Mobile: Enter adds a new line (natural behavior). Use the ↑ button to send.
   // Desktop: Enter sends, Shift+Enter adds new line.
   const isMobileDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -903,6 +903,12 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
           <div style={{ background:'#2a0a0a', borderTop:`2px solid ${G.coral}`, padding:'10px 22px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
             <p style={{ fontSize:12, color:G.coral, fontFamily:G.sans, margin:0 }}>{reportError}</p>
             <button onClick={() => onRetryReport ? onRetryReport() : onSend()} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:8, padding:'6px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:G.sans, flexShrink:0 }}>Retry →</button>
+          </div>
+        )}
+        {paywallSoon && (
+          <div style={{ background:G.surf2, borderTop:`1px solid ${G.brd}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:10 }}>
+            <Dots/>
+            <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans, margin:0 }}>Take a moment to read that — continuing in a few seconds...</p>
           </div>
         )}
         {/* Input */}
@@ -1428,6 +1434,7 @@ export default function App() {
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating,   setIsGenerating]   = useState(false);
   const [paywallPending, setPaywallPending] = useState(false); // true when PAYWALL_NOW detected, mid-chat
+  const [paywallSoon,    setPaywallSoon]    = useState(false); // true during the brief reading gap before the overlay appears
   const [sectionsDone,    setSectionsDone]    = useState(0);
   const [sectionSummaries,setSectionSummaries] = useState({ s1:'', s2:'', s3:'', s4:'' });
   const [questionNum,    setQuestionNum]    = useState(0);
@@ -1744,13 +1751,18 @@ export default function App() {
       setStreamingContent('');
 
       const text = await apiChat(apiMsgs, token, maxTok, SP, (partial) => {
-        // Update the streaming placeholder in real time
+        // Strip control signals (and partial fragments of them while still
+        // typing) from the LIVE display so nothing like "PAYWALL_NO" or
+        // "GENERATE_REPORT_NOW" ever flashes on screen mid-stream.
+        // Real prose doesn't end in a run of caps/underscores, so this is safe.
+        const cleanPartial = partial.replace(/[A-Z_]{3,}\s*$/, '').trimEnd();
+
         setMessages(prev => prev.map((m, i) =>
           i === prev.length - 1 && m.streaming
-            ? { ...m, content: partial }
+            ? { ...m, content: cleanPartial }
             : m
         ));
-        setStreamingContent(partial);
+        setStreamingContent(cleanPartial);
 
         // Show generation overlay when Claude signals it
         const lower = partial.toLowerCase();
@@ -1836,7 +1848,10 @@ export default function App() {
           // Strip the raw signal from what's displayed to the user
           const displayText = text.replace(/\s*PAYWALL_NOW\s*$/, '').trim();
           setMessages(prev => prev.map(m => m.streaming ? { ...m, content: displayText, streaming: false } : m));
-          setPaywallPending(true);
+          // Give the user a moment to actually read Claude's closing message
+          // before the payment overlay appears — don't slam it in instantly.
+          setPaywallSoon(true);
+          setTimeout(() => { setPaywallSoon(false); setPaywallPending(true); }, 4000);
         }
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW')) {
@@ -1888,7 +1903,7 @@ export default function App() {
   const reset = () => {
     if (!DEMO_MODE) clearToken();
     clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
-    setPaywallPending(false);
+    setPaywallPending(false); setPaywallSoon(false);
     try {
       localStorage.removeItem('ikigai_section_summaries');
       localStorage.removeItem('ikigai_promo_code');
@@ -2047,6 +2062,7 @@ export default function App() {
           sectionsDone={sectionsDone}
           questionNum={questionNum}
           onRetryReport={() => { const snap=[...messages]; setSectionSummaries(s => { generateReport(s, snap); return s; }); setReportError(null); setIsGenerating(true); }}
+          paywallSoon={paywallSoon}
         />
         {paywallPending && (
           <div style={{ position:'fixed', inset:0, zIndex:200 }}>
