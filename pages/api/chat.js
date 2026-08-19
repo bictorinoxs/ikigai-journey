@@ -13,10 +13,10 @@ import jwt from 'jsonwebtoken';
 export const maxDuration = 60;
 
 // Max messages allowed before a paid token is required.
-// Covers: hidden "Begin." + intro + Q1 + up to 2 follow-ups + Q2 + up to 2
-// follow-ups, with a little headroom. Tune this if the preview feels short
-// or long in practice.
-const FREE_PREVIEW_MESSAGE_LIMIT = 14;
+// Covers: hidden "Begin." + intro + Q1-Q4 (Section 1) + up to 2 follow-ups
+// each + Section 1 Summary, with headroom. Tune this if the preview feels
+// short or long in practice.
+const FREE_PREVIEW_MESSAGE_LIMIT = 26;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

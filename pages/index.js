@@ -54,13 +54,13 @@ ABSOLUTE RULES:
 FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Let them know that each of your responses may take 2 to 5 minutes as you carefully reflect on their answers — this is intentional, not a glitch. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
 
 FREE PREVIEW GATE — CRITICAL:
-Q1 and Q2 are a free preview — no payment required yet. Ask Q1, mirror their answer, allow at most 2 follow-up exchanges if their answer is thin or you're genuinely curious, then move to Q2 the same way. Use your judgment on when Q1 and Q2 each feel complete — this should feel like a natural, warm conversation that hooks them, not a rigid script.
+Q1 through Q4 (all of Section 1 — What You Love) are a free preview — no payment required yet. Ask each question, mirror their answers, allow at most 2 follow-up exchanges per question if their answer is thin or you're genuinely curious. This should feel like a natural, warm conversation that hooks them, not a rigid script.
 
-Immediately after Q2 feels complete (their answer is mirrored, at most 2 follow-ups used), do NOT ask Q3. Instead say something warm and specific referencing what they just shared — acknowledge the real pattern you're already noticing in just two answers — then end your message with the exact signal on its own line: PAYWALL_NOW
+Immediately after you deliver SECTION 1 SUMMARY, do NOT ask Q5. Instead, in the same message as (or right after) the Section 1 Summary, add a short, specific hook that makes them want to keep going — reference the exact pattern you're already seeing in their first 4 answers, and tease what's ahead: that Section 2 will reveal what they're genuinely good at (not just what they enjoy), and that the full report maps this into a real archetype, niche, and monetization path. Make it feel like they've already gotten real value and there's clearly more waiting. Then end your message with the exact signal on its own line: PAYWALL_NOW
 
-Never write PAYWALL_NOW before Q2 is genuinely complete. Never write it as an example or preview. Only once, right after Q2.
+Never write PAYWALL_NOW before SECTION 1 SUMMARY is genuinely complete. Never write it as an example or preview. Only once, right after Section 1 Summary.
 
-Example tone (write your own, don't copy verbatim): "[Name], even in these two answers I can already see a pattern — [specific observation using their words]. This is exactly the kind of thing your full report will map out in detail. Let's continue — 14 more questions to go.
+Example tone (write your own, don't copy verbatim): "[Name], four answers in and I can already map a real pattern — [specific observation using their words]. This is just Section 1 of 4. Section 2 is where we uncover what you're genuinely good at — not just what you love — and by the end you'll have a full archetype, your niche, and 3 real ways to turn this into income. You're 4 questions in. 12 to go, and it only gets more revealing from here.
 
 PAYWALL_NOW"
 
@@ -530,19 +530,13 @@ const Landing = ({ onStart, isVerifying = false }) => (
     {/* Bottom CTA */}
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
-      <div style={{ marginBottom:8 }}>
-        <span style={{ fontSize:18, color:G.muted, fontFamily:G.serif, textDecoration:'line-through', marginRight:10 }}>₱600</span>
-        <span style={{ fontSize:34, fontWeight:700, color:G.gold }}>₱499</span>
-      </div>
-      <div style={{ display:'inline-block', background:'#2a1a08', border:`1px solid ${G.gold}50`, borderRadius:20, padding:'4px 14px', marginBottom:12 }}>
-        <span style={{ fontSize:12, color:G.gold, fontFamily:G.sans, fontWeight:600, letterSpacing:'0.5px' }}>🔥 Limited Time Offer</span>
-      </div>
-      <p style={{ fontSize:13, color:G.muted, marginBottom:26, fontFamily:G.sans }}>One-time · Instant access · Full 20-section personal report</p>
+      <p style={{ fontSize:15, color:G.soft, marginBottom:26, fontFamily:G.sans, maxWidth:420, marginLeft:'auto', marginRight:'auto', lineHeight:1.6 }}>
+        Try the first section free — no payment required to begin.
+      </p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
-        {isVerifying ? 'Verifying...' : 'Begin Your Journey — ₱499'}
+        {isVerifying ? 'Verifying...' : 'Start My Journey'}
       </button>
-      <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · GCash · Maya · Credit/Debit Card</p>
-      <p style={{ fontSize:11, color:G.muted, marginTop:6, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
+      <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans, opacity:.7 }}>A product by Purposely Learning Hub</p>
     </div>
   </div>
@@ -763,10 +757,17 @@ const GenProgressBar = () => {
 const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null, awaitingContinue=false }) => {
   // Mobile: Enter adds a new line (natural behavior). Use the ↑ button to send.
   // Desktop: Enter sends, Shift+Enter adds new line.
-  const isMobileDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  // NOTE: 'ontouchstart' in window / navigator.maxTouchPoints are unreliable —
+  // many Windows laptops with touchscreens report touch support even when
+  // the user is typing with a physical keyboard, causing false positives.
+  // matchMedia('(pointer: coarse)') checks the PRIMARY input mechanism
+  // instead, which correctly stays "fine" (mouse/trackpad) on such laptops.
+  const isMobileDevice = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(pointer: coarse)').matches;
   const handleKey = e => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      if (isMobileDevice) return; // Let Enter add a newline on mobile
+      if (isMobileDevice) return; // Let Enter add a newline on touch devices
       e.preventDefault();
       onSend();
     }
