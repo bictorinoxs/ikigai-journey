@@ -414,8 +414,8 @@ const IkigaiDiagram = () => (
     <text x="180" y="20"  textAnchor="middle" fill="var(--gold)"  fontSize="19" fontFamily="var(--serif)" fontWeight="700">What You Love</text>
     <text x="50"  y="228" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You're</text>
     <text x="50"  y="248" textAnchor="middle" fill="var(--lav)"   fontSize="16" fontFamily="var(--serif)" fontWeight="700">Good At</text>
-    <text x="310" y="228" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">You Could</text>
-    <text x="310" y="248" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">Fix</text>
+    <text x="310" y="228" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">What You</text>
+    <text x="310" y="248" textAnchor="middle" fill="var(--coral)" fontSize="16" fontFamily="var(--serif)" fontWeight="700">Could Fix</text>
     <text x="180" y="334" textAnchor="middle" fill="var(--sage)"  fontSize="17" fontFamily="var(--serif)" fontWeight="700">What You Can Be Paid For</text>
   </svg>
 );
