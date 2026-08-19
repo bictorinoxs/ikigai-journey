@@ -531,7 +531,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
       <p style={{ fontSize:15, color:G.soft, marginBottom:26, fontFamily:G.sans, maxWidth:420, marginLeft:'auto', marginRight:'auto', lineHeight:1.6 }}>
-        Try the first section free — no payment required to begin.
+        Try it for free.
       </p>
       <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
         {isVerifying ? 'Verifying...' : 'Start My Journey'}
@@ -563,7 +563,7 @@ const Payment = ({ onSuccess, onBack, freePreview = false }) => {
       const res  = await fetch('/api/validate-promo', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code: promoCode }) });
       const data = await res.json();
       if (data.valid) { setPromoResult(data); }
-      else { setPromoErr(data.error || 'Invalid promo code'); }
+      else { setPromoErr(data.error || 'Invalid discount code'); }
     } catch { setPromoErr('Could not validate. Try again.'); }
     setPromoChecking(false);
   };
@@ -627,10 +627,10 @@ const Payment = ({ onSuccess, onBack, freePreview = false }) => {
             )}
           </div>
 
-          {/* Promo code */}
+          {/* Discount code */}
           <div style={{ marginBottom:16 }}>
             <label style={{ display:'block', fontSize:12, color:G.muted, fontFamily:G.sans, marginBottom:6, textTransform:'uppercase', letterSpacing:'1px' }}>
-              Promo Code <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:G.muted }}>(optional)</span>
+              Discount Code <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:G.muted }}>(optional)</span>
             </label>
             <div style={{ display:'flex', gap:8 }}>
               <input

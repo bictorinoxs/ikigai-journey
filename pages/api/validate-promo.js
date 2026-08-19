@@ -24,7 +24,7 @@ export default function handler(req, res) {
   const promo     = PROMO_CODES[upperCode];
 
   if (!promo) {
-    return res.status(200).json({ valid: false, error: 'Invalid promo code' });
+    return res.status(200).json({ valid: false, error: 'Invalid discount code' });
   }
 
   let discountedAmount = FULL_PRICE;
