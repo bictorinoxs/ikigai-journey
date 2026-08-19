@@ -53,6 +53,17 @@ ABSOLUTE RULES:
 
 FLOW: Ask their first name. Then warmly introduce the journey — explain there are 4 sections, 16 questions, and they'll receive a 20-section personal report at the end. Let them know that each of your responses may take 2 to 5 minutes as you carefully reflect on their answers — this is intentional, not a glitch. Emphasize that the quality of their report depends entirely on the depth of their answers — encourage them to answer from the heart, not what sounds good. Specific, honest answers produce a powerful report. Vague answers produce a generic one. Then begin Q1.
 
+FREE PREVIEW GATE — CRITICAL:
+Q1 and Q2 are a free preview — no payment required yet. Ask Q1, mirror their answer, allow at most 2 follow-up exchanges if their answer is thin or you're genuinely curious, then move to Q2 the same way. Use your judgment on when Q1 and Q2 each feel complete — this should feel like a natural, warm conversation that hooks them, not a rigid script.
+
+Immediately after Q2 feels complete (their answer is mirrored, at most 2 follow-ups used), do NOT ask Q3. Instead say something warm and specific referencing what they just shared — acknowledge the real pattern you're already noticing in just two answers — then end your message with the exact signal on its own line: PAYWALL_NOW
+
+Never write PAYWALL_NOW before Q2 is genuinely complete. Never write it as an example or preview. Only once, right after Q2.
+
+Example tone (write your own, don't copy verbatim): "[Name], even in these two answers I can already see a pattern — [specific observation using their words]. This is exactly the kind of thing your full report will map out in detail. Let's continue — 14 more questions to go.
+
+PAYWALL_NOW"
+
 BULK ANSWER HANDLING: If the user provides answers to several questions at once (e.g. answers to Q1-Q4 in one message, or all 16 at once), accept all their answers, extract the relevant information for each question, proceed through the sections, and give the section summaries normally. Do NOT stop to ask clarifying questions or ask them to answer one at a time. Use what they gave you and keep moving.
 
 SECTION 1 — WHAT YOU LOVE (Q1–Q4):
@@ -532,6 +543,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
       </button>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>Secured by PayMongo · GCash · Maya · Credit/Debit Card</p>
       <p style={{ fontSize:11, color:G.muted, marginTop:6, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
+      <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans, opacity:.7 }}>A product by Purposely Learning Hub</p>
     </div>
   </div>
 );
@@ -539,7 +551,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 //  PAYMENT VIEW (simulated)
 // ─────────────────────────────────────────────────────────────────────────────
-const Payment = ({ onSuccess, onBack }) => {
+const Payment = ({ onSuccess, onBack, freePreview = false }) => {
   const [loading,       setLoading]       = useState(false);
   const [email,         setEmail]         = useState('');
   const [emailErr,      setEmailErr]      = useState('');
@@ -587,8 +599,17 @@ const Payment = ({ onSuccess, onBack }) => {
           {/* Header */}
           <div style={{ textAlign:'center', marginBottom:24 }}>
             <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}><PetalMark size={44} animated/></div>
-            <h2 style={{ color:G.cream, fontSize:20, fontWeight:700, marginBottom:4, fontFamily:G.serif }}>Ikigai Journey</h2>
-            <p style={{ color:G.muted, fontSize:12 }}>Discover Your Purpose — 20-Section Personal Report</p>
+            {freePreview ? (
+              <>
+                <h2 style={{ color:G.gold, fontSize:20, fontWeight:700, marginBottom:6, fontFamily:G.serif }}>You're already onto something 🌸</h2>
+                <p style={{ color:G.soft, fontSize:13, lineHeight:1.6 }}>Two questions in, and real patterns are already showing. Continue to unlock all 16 questions and your full 20-section report.</p>
+              </>
+            ) : (
+              <>
+                <h2 style={{ color:G.cream, fontSize:20, fontWeight:700, marginBottom:4, fontFamily:G.serif }}>Ikigai Journey</h2>
+                <p style={{ color:G.muted, fontSize:12 }}>Discover Your Purpose — 20-Section Personal Report</p>
+              </>
+            )}
           </div>
 
           {/* Price */}
@@ -1406,6 +1427,7 @@ export default function App() {
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating,   setIsGenerating]   = useState(false);
+  const [paywallPending, setPaywallPending] = useState(false); // true when PAYWALL_NOW detected, mid-chat
   const [sectionsDone,    setSectionsDone]    = useState(0);
   const [sectionSummaries,setSectionSummaries] = useState({ s1:'', s2:'', s3:'', s4:'' });
   const [questionNum,    setQuestionNum]    = useState(0);
@@ -1553,13 +1575,68 @@ export default function App() {
     saveToken(t);
   };
 
+  // After payment verifies, resume a mid-chat conversation (paywall at Q2)
+  // if one was saved, instead of restarting from question 1.
+  const resumeAfterPayment = async (token) => {
+    let saved = null;
+    try {
+      const raw = localStorage.getItem('ikigai_midchat_resume');
+      if (raw) saved = JSON.parse(raw);
+    } catch {}
+
+    if (!saved || !saved.messages?.length) {
+      // No mid-chat progress saved — fall back to a fresh start
+      await startChat(token);
+      return;
+    }
+
+    localStorage.removeItem('ikigai_midchat_resume');
+    setPaywallPending(false);
+
+    setView('chat');
+    setMessages(saved.messages);
+    setAnswerCount(saved.answerCount || 0);
+    setSectionSummaries(saved.sectionSummaries || { s1:'', s2:'', s3:'', s4:'' });
+    setSectionsDone(saved.sectionsDone || 0);
+    setQuestionNum(saved.questionNum || 0);
+    setStreamingContent('');
+    if (!localStorage.getItem('ikigai_chat_start')) {
+      localStorage.setItem('ikigai_chat_start', Date.now().toString());
+    }
+
+    // Send one invisible "continue" turn so Claude proceeds to Q3
+    // without repeating anything already asked.
+    setIsLoading(true);
+    try {
+      const apiMsgs = saved.messages
+        .filter(m => !m.streaming)
+        .map(({ role, content }) => ({ role, content }))
+        .concat([{ role: 'user', content: 'Payment confirmed — please continue with Q3.' }]);
+
+      let liveText = '';
+      setMessages(prev => [...prev, { role: 'user', content: 'Payment confirmed — please continue with Q3.', hidden: true }, { role: 'assistant', content: '', streaming: true }]);
+
+      const text = await apiChat(apiMsgs, token, 1000, SP, (partial) => {
+        liveText = partial;
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.streaming ? { ...m, content: partial } : m));
+      });
+
+      setMessages(prev => prev.map(m => m.streaming ? { ...m, content: text, streaming: false } : m));
+    } catch (err) {
+      console.error('[resumeAfterPayment] Error:', err?.message);
+      setMessages(prev => prev.map(m => m.streaming ? { ...m, content: 'Welcome back! Let\'s continue — please give me a moment...', streaming: false } : m));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const verifyAndUnlock = async (sessionId) => {
     setIsVerifying(true);
     try {
       const result = await apiVerifyPayment(sessionId);
       if (result.verified && result.token) {
         persistToken(result.token);
-        await startChat(result.token);
+        await resumeAfterPayment(result.token);
       }
     } catch (err) {
       alert('Payment verification failed: ' + err.message + '\n\nContact support if you were charged.');
@@ -1575,20 +1652,29 @@ export default function App() {
       return;
     }
 
-    // Already paid — go straight to chat
+    // Already paid — go straight to chat (full access)
     const existing = accessToken || getToken();
     if (existing) {
       await startChat(existing);
       return;
     }
 
-    // Show payment page to collect email BEFORE redirecting to PayMongo
-    setView('payment');
+    // No payment yet — start the FREE PREVIEW (Q1 + Q2, unauthenticated)
+    // Payment is requested later, after Q2, via the PAYWALL_NOW signal.
+    await startChat(null);
   };
 
   // Called when user submits email on payment page and clicks Continue
   const handlePaymentContinue = async (email, amount) => {
     if (email) localStorage.setItem('ikigai_user_email', email);
+    // If this payment was triggered mid-chat (PAYWALL_NOW), save the
+    // in-progress conversation so it can resume seamlessly after payment
+    // instead of restarting from question 1.
+    if (paywallPending && messages.length > 1) {
+      try {
+        localStorage.setItem('ikigai_midchat_resume', JSON.stringify({ messages, answerCount, sectionSummaries, sectionsDone, questionNum }));
+      } catch {}
+    }
     try {
       const { checkoutUrl, sessionId } = await apiCreateCheckout(amount);
       localStorage.setItem('ikigai_pending_session', sessionId);
@@ -1745,6 +1831,13 @@ export default function App() {
           }
         }
       } else {
+        // Detect free-preview paywall gate (right after Q2)
+        if (text.includes('PAYWALL_NOW')) {
+          // Strip the raw signal from what's displayed to the user
+          const displayText = text.replace(/\s*PAYWALL_NOW\s*$/, '').trim();
+          setMessages(prev => prev.map(m => m.streaming ? { ...m, content: displayText, streaming: false } : m));
+          setPaywallPending(true);
+        }
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW')) {
           setIsGenerating(true);
@@ -1773,11 +1866,18 @@ export default function App() {
       }
     } catch (err) {
       setIsGenerating(false);
-      setReportError('Something went wrong. Your answers are saved — please try again.');
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Something went wrong. Your answers are saved — please try again.'
-      }]);
+      const msg = err?.message || '';
+      if (msg.includes('Free preview limit') || msg.includes('PAYMENT_REQUIRED')) {
+        // Server rejected an unauthenticated message past the free preview —
+        // re-show the paywall instead of a generic error.
+        setPaywallPending(true);
+      } else {
+        setReportError('Something went wrong. Your answers are saved — please try again.');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Something went wrong. Your answers are saved — please try again.'
+        }]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1788,7 +1888,12 @@ export default function App() {
   const reset = () => {
     if (!DEMO_MODE) clearToken();
     clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
-    try { localStorage.removeItem('ikigai_section_summaries'); localStorage.removeItem('ikigai_promo_code'); } catch {}
+    setPaywallPending(false);
+    try {
+      localStorage.removeItem('ikigai_section_summaries');
+      localStorage.removeItem('ikigai_promo_code');
+      localStorage.removeItem('ikigai_midchat_resume');
+    } catch {}
     setAccessToken(null);
     setView('landing');
     setMessages([]);
@@ -1926,22 +2031,29 @@ export default function App() {
 
   if (view === 'chat') {
     return (
-      <ChatView
-        messages={messages}
-        input={input}
-        setInput={setInput}
-        onSend={handleSend}
-        isLoading={isLoading}
-        answerCount={answerCount}
-        endRef={endRef}
-        token={accessToken || getToken()}
-        isGenerating={isGenerating}
-        generationMsg={generationMsg}
-        reportError={reportError}
-        sectionsDone={sectionsDone}
-        questionNum={questionNum}
-        onRetryReport={() => { const snap=[...messages]; setSectionSummaries(s => { generateReport(s, snap); return s; }); setReportError(null); setIsGenerating(true); }}
-      />
+      <>
+        <ChatView
+          messages={messages}
+          input={input}
+          setInput={setInput}
+          onSend={handleSend}
+          isLoading={isLoading}
+          answerCount={answerCount}
+          endRef={endRef}
+          token={accessToken || getToken()}
+          isGenerating={isGenerating}
+          generationMsg={generationMsg}
+          reportError={reportError}
+          sectionsDone={sectionsDone}
+          questionNum={questionNum}
+          onRetryReport={() => { const snap=[...messages]; setSectionSummaries(s => { generateReport(s, snap); return s; }); setReportError(null); setIsGenerating(true); }}
+        />
+        {paywallPending && (
+          <div style={{ position:'fixed', inset:0, zIndex:200 }}>
+            <Payment onSuccess={handlePaymentContinue} onBack={() => setPaywallPending(false)} freePreview />
+          </div>
+        )}
+      </>
     );
   }
 
