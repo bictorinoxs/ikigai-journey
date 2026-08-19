@@ -760,7 +760,7 @@ const GenProgressBar = () => {
   );
 };
 
-const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null, paywallSoon=false }) => {
+const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, endRef, isGenerating=false, generationMsg='', reportError=null, sectionsDone=0, questionNum=0, onRetryReport=null, awaitingContinue=false }) => {
   // Mobile: Enter adds a new line (natural behavior). Use the ↑ button to send.
   // Desktop: Enter sends, Shift+Enter adds new line.
   const isMobileDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -905,10 +905,12 @@ const ChatView = ({ messages, input, setInput, onSend, isLoading, answerCount, e
             <button onClick={() => onRetryReport ? onRetryReport() : onSend()} style={{ background:G.gold, color:G.bg, border:'none', borderRadius:8, padding:'6px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:G.sans, flexShrink:0 }}>Retry →</button>
           </div>
         )}
-        {paywallSoon && (
-          <div style={{ background:G.surf2, borderTop:`1px solid ${G.brd}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:10 }}>
-            <Dots/>
-            <p style={{ fontSize:12, color:G.muted, fontFamily:G.sans, margin:0 }}>Take a moment to read that — continuing in a few seconds...</p>
+        {awaitingContinue && (
+          <div style={{ background:G.surf2, borderTop:`1px solid ${G.gold}`, padding:'12px 22px', display:'flex', alignItems:'center', gap:10 }}>
+            <PetalMark size={18}/>
+            <p style={{ fontSize:12, color:G.gold, fontFamily:G.sans, margin:0, fontWeight:600 }}>
+              Ready for more? Type <strong>"continue"</strong> below to unlock the rest of your journey.
+            </p>
           </div>
         )}
         {/* Input */}
@@ -1433,8 +1435,8 @@ export default function App() {
   const [answerCount,  setAnswerCount]  = useState(0);
   const [accessToken,  setAccessToken]  = useState(null);
   const [isGenerating,   setIsGenerating]   = useState(false);
-  const [paywallPending, setPaywallPending] = useState(false); // true when PAYWALL_NOW detected, mid-chat
-  const [paywallSoon,    setPaywallSoon]    = useState(false); // true during the brief reading gap before the overlay appears
+  const [paywallPending, setPaywallPending] = useState(false); // true when payment overlay is showing
+  const [awaitingContinue, setAwaitingContinue] = useState(false); // true after Q2 — waiting for user to type "continue"
   const [sectionsDone,    setSectionsDone]    = useState(0);
   const [sectionSummaries,setSectionSummaries] = useState({ s1:'', s2:'', s3:'', s4:'' });
   const [questionNum,    setQuestionNum]    = useState(0);
@@ -1723,6 +1725,24 @@ export default function App() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    // If we're waiting for the user to confirm they're ready for payment,
+    // don't send this to Claude — check if they typed "continue" first.
+    if (awaitingContinue) {
+      const typed = input.trim().toLowerCase();
+      setInput('');
+      if (typed === 'continue') {
+        setAwaitingContinue(false);
+        setPaywallPending(true);
+      } else {
+        // Nudge them toward the expected word without losing their message
+        setMessages(prev => [...prev, { role: 'user', content: input.trim() }, {
+          role: 'assistant',
+          content: 'Type "continue" (just that word) whenever you\'re ready to unlock the rest of your journey.',
+        }]);
+      }
+      return;
+    }
+
     const userMsg  = { role: 'user', content: input.trim() };
     const updated  = [...messages, userMsg];
     setInput('');
@@ -1845,13 +1865,14 @@ export default function App() {
       } else {
         // Detect free-preview paywall gate (right after Q2)
         if (text.includes('PAYWALL_NOW')) {
-          // Strip the raw signal from what's displayed to the user
+          // Strip the raw signal from what's displayed to the user.
+          // NOTE: target the last message by index, not by m.streaming —
+          // the streaming flag was already cleared by the step above,
+          // so a streaming-flag match here would silently never fire.
           const displayText = text.replace(/\s*PAYWALL_NOW\s*$/, '').trim();
-          setMessages(prev => prev.map(m => m.streaming ? { ...m, content: displayText, streaming: false } : m));
-          // Give the user a moment to actually read Claude's closing message
-          // before the payment overlay appears — don't slam it in instantly.
-          setPaywallSoon(true);
-          setTimeout(() => { setPaywallSoon(false); setPaywallPending(true); }, 4000);
+          setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: displayText, streaming: false } : m));
+          // Don't auto-forward — wait for the user to type "continue"
+          setAwaitingContinue(true);
         }
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW')) {
@@ -1903,7 +1924,7 @@ export default function App() {
   const reset = () => {
     if (!DEMO_MODE) clearToken();
     clearChat(); setResumeData(null); setEmailSent(false); setStreamingContent(''); setIsGenerating(false);
-    setPaywallPending(false); setPaywallSoon(false);
+    setPaywallPending(false); setAwaitingContinue(false);
     try {
       localStorage.removeItem('ikigai_section_summaries');
       localStorage.removeItem('ikigai_promo_code');
@@ -2062,7 +2083,7 @@ export default function App() {
           sectionsDone={sectionsDone}
           questionNum={questionNum}
           onRetryReport={() => { const snap=[...messages]; setSectionSummaries(s => { generateReport(s, snap); return s; }); setReportError(null); setIsGenerating(true); }}
-          paywallSoon={paywallSoon}
+          awaitingContinue={awaitingContinue}
         />
         {paywallPending && (
           <div style={{ position:'fixed', inset:0, zIndex:200 }}>
