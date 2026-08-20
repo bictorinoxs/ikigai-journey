@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
       <li>Instagram: @purposely.life</li>
       </ul>
       <hr/>
-      <p className="disclaimer">This document is a draft and should be reviewed by a licensed Philippine attorney before publication, particularly regarding compliance with the Data Privacy Act of 2012 and its Implementing Rules and Regulations.</p>
+      <p className="disclaimer"></p>
     </LegalLayout>
   );
 }

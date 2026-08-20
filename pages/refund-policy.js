@@ -28,7 +28,7 @@ export default function RefundPolicyPage() {
       <li>Instagram: @purposely.life</li>
       </ul>
       <hr/>
-      <p className="disclaimer">This document is a draft and should be reviewed by a licensed Philippine attorney before publication.</p>
+      <p className="disclaimer"></p>
     </LegalLayout>
   );
 }
