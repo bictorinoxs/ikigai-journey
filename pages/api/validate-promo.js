@@ -9,6 +9,7 @@ const PROMO_CODES = {
   'MYIKIGAI2026':  { discount: 200, type: 'fixed',   label: '₱200 off' },   // ₱499 → ₱299
   'MYPURPOSE2026': { discount: 100, type: 'fixed',   label: '₱100 off' },   // ₱499 → ₱399
   'ADMINIKIGAI':   { discount: 490, type: 'fixed',   label: '₱490 off' },   // ₱499 → ₱9 (internal testing)
+  'DADBUDPH':      { discount: 200, type: 'fixed',   label: '₱200 off' },   // ₱499 → ₱299
 };
 
 export default function handler(req, res) {
