@@ -604,7 +604,7 @@ const Payment = ({ onSuccess, onBack, freePreview = false }) => {
     setTimeout(() => { setLoading(false); onSuccess(email, amount); }, 1800);
   };
   return (
-    <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:G.sans }}>
+    <div style={{ background:G.bg, minHeight:'100vh', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'24px 24px 60px', fontFamily:G.sans, overflowY:'auto' }}>
       <div style={{ maxWidth:420, width:'100%' }}>
         <button onClick={onBack} style={{ background:'none', border:'none', color:G.muted, cursor:'pointer', marginBottom:20, fontSize:13 }}>← Back</button>
         <div className="ikigai-payment-card" style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:32 }}>
@@ -2116,7 +2116,7 @@ export default function App() {
           awaitingContinue={awaitingContinue}
         />
         {paywallPending && (
-          <div style={{ position:'fixed', inset:0, zIndex:200 }}>
+          <div style={{ position:'fixed', inset:0, zIndex:200, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
             <Payment onSuccess={handlePaymentContinue} onBack={() => setPaywallPending(false)} freePreview />
           </div>
         )}
