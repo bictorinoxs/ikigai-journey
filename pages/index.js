@@ -498,19 +498,103 @@ const Landing = ({ onStart, isVerifying = false }) => (
           Discover Your<br/><em style={{ color:G.gold }}>Purpose</em>
         </h1>
         <p style={{ fontSize:16, lineHeight:1.85, color:G.soft, marginBottom:32, fontFamily:G.sans, fontWeight:300, maxWidth:420 }}>
-          A guided 16-question journey uncovering what you love, what you're good at, what the world needs, and what you can be paid for — completed in just 15 to 20 minutes.
+          A guided 16-question journey uncovering what you love, what you're good at, what you could fix, and what you can be paid for — completed in just 15 to 20 minutes.
         </p>
       </div>
       <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:420 }}><IkigaiDiagram/></div>
     </div>
 
+    <div style={{ borderTop:`1px solid ${G.brd}` }}/>
+
+    {/* Pain Hook */}
+    <div style={{ textAlign:'center', padding:'56px 28px 40px' }}>
+      <div style={{ maxWidth:560, margin:'0 auto' }}>
+        <h2 style={{ fontSize:'clamp(26px,4.2vw,38px)', lineHeight:1.22, fontWeight:800, marginBottom:20, fontFamily:G.serif }}>
+          <span style={{ color:G.cream, display:'block' }}>We Don't Just Inspire You.</span>
+          <span style={{ color:G.gold, display:'block' }}>We Help You See What's Already There.</span>
+        </h2>
+        <p style={{ fontSize:15, color:G.soft, fontFamily:G.sans, fontWeight:300, lineHeight:1.7 }}>
+          Most self-discovery gives you a nice feeling that fades by Monday. This gives you the actual pattern — so you finally stop guessing what you're for.
+        </p>
+      </div>
+    </div>
+
+    {/* Where You Are / Where You'll Be */}
+    <div style={{ maxWidth:640, margin:'0 auto', padding:'8px 28px 48px' }}>
+      <div className="ikigai-compare-grid" style={{ display:'flex', alignItems:'center', gap:14 }}>
+        <div style={{ flex:1, background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:'26px 22px' }}>
+          <p style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:G.muted, marginBottom:8, fontFamily:G.sans }}>Where You Are</p>
+          <p style={{ fontFamily:G.serif, fontSize:24, fontWeight:700, color:G.muted, marginBottom:16 }}>Unclear</p>
+          {['Capable, but can\'t name your direction','Same questions, no real answers','Advice that never quite fits','Motivation that fades by Monday'].map((t,i)=>(
+            <p key={i} style={{ fontSize:13, color:G.soft, fontFamily:G.sans, padding:'9px 0', borderTop: i===0 ? 'none' : `1px solid ${G.brd}` }}>{t}</p>
+          ))}
+        </div>
+        <span style={{ color:G.gold, fontSize:22, flexShrink:0 }}>→</span>
+        <div style={{ flex:1, background:`linear-gradient(160deg, rgba(240,167,50,.06), ${G.surf})`, border:`1px solid ${G.gold}`, borderRadius:16, padding:'26px 22px' }}>
+          <p style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:G.muted, marginBottom:8, fontFamily:G.sans }}>Where You'll Be</p>
+          <p style={{ fontFamily:G.serif, fontSize:24, fontWeight:700, color:G.gold, marginBottom:16 }}>Clear</p>
+          {['A purpose you can say in one sentence','A pattern only you could have written','A real plan, not just a feeling','Clarity that\'s still true next month'].map((t,i)=>(
+            <p key={i} style={{ fontSize:13, color:G.soft, fontFamily:G.sans, padding:'9px 0', borderTop: i===0 ? 'none' : `1px solid ${G.brd}` }}>{t}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div style={{ borderTop:`1px solid ${G.brd}` }}/>
+
+    {/* Sound Familiar? */}
+    <div style={{ maxWidth:640, margin:'0 auto', padding:'56px 28px' }}>
+      <h2 style={{ fontSize:28, fontWeight:700, textAlign:'center', marginBottom:8, fontFamily:G.serif }}>Sound Familiar?</h2>
+      <p style={{ fontSize:12, color:G.muted, textAlign:'center', marginBottom:32, fontFamily:G.sans }}>Three things almost everyone tells us</p>
+      {[
+        [G.gold, "\"I know I'm capable of more — I just can't name what it is.\""],
+        [G.lav,  '"I\'ve taken quizzes, read the books. Nothing actually clicked."'],
+        [G.coral,'"I followed the plan everyone expected. Nobody asked if it was mine."'],
+      ].map(([c,t],i)=>(
+        <div key={i} style={{ background:G.surf, border:`1px solid ${G.brd}`, borderRadius:16, padding:'22px 24px', marginBottom:12, display:'flex', gap:14, alignItems:'flex-start' }}>
+          <span style={{ width:8, height:8, borderRadius:'50%', background:c, marginTop:8, flexShrink:0 }}/>
+          <p style={{ fontFamily:G.serif, fontStyle:'italic', fontSize:16, color:G.cream, lineHeight:1.5 }}>{t}</p>
+        </div>
+      ))}
+      <p style={{ textAlign:'center', marginTop:24, fontFamily:G.serif, fontStyle:'italic', color:G.gold, fontSize:15 }}>
+        You're not lost. You just haven't put the pieces together yet.
+      </p>
+    </div>
+
+    <div style={{ borderTop:`1px solid ${G.brd}` }}/>
+
+    {/* 4-Step Journey */}
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'56px 28px' }}>
+      <h2 style={{ fontSize:28, fontWeight:700, textAlign:'center', marginBottom:8, fontFamily:G.serif }}>Your Journey, Step by Step</h2>
+      <p style={{ fontSize:12, color:G.muted, textAlign:'center', marginBottom:36, fontFamily:G.sans }}>Simple process. Real clarity.</p>
+      {[
+        ['Start Free — Section 1', "Answer 4 guided questions about what you love. No payment, no commitment. Feel it for yourself first."],
+        ['Continue Your Journey', "12 more questions across 3 sections — what you're good at, what you could fix, what you can be paid for."],
+        ['Your Pattern Gets Mapped', "Your answers are woven into a 20-section personal report — your discovery profile, your niche, your paths to income."],
+        ['Walk Away With a Plan', "Not just inspiration — a 12-month vision, your daily mantra, and concrete next steps you can act on today."],
+      ].map(([title,desc],i,arr)=>(
+        <div key={i}>
+          <div style={{ display:'flex', gap:18, alignItems:'flex-start', marginBottom: i<arr.length-1 ? 8 : 0 }}>
+            <div style={{ fontFamily:G.serif, fontSize:14, fontWeight:700, color:G.bg, background:G.gold, width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{i+1}</div>
+            <div>
+              <h3 style={{ fontFamily:G.sans, fontSize:15, fontWeight:600, color:G.cream, marginBottom:5 }}>{title}</h3>
+              <p style={{ fontSize:13, color:G.soft, fontFamily:G.sans, fontWeight:300, lineHeight:1.6 }}>{desc}</p>
+            </div>
+          </div>
+          {i<arr.length-1 && <div style={{ width:1, background:G.brd, marginLeft:15, height:22 }}/>}
+        </div>
+      ))}
+    </div>
+
+    <div style={{ borderTop:`1px solid ${G.brd}` }}/>
+
     {/* Features */}
-    <div style={{ maxWidth:920, margin:'0 auto', padding:'8px 28px 44px' }}>
+    <div style={{ maxWidth:920, margin:'0 auto', padding:'56px 28px' }}>
       <p style={{ fontSize:10, letterSpacing:'3px', color:G.muted, textTransform:'uppercase', marginBottom:22, fontFamily:G.sans, textAlign:'center' }}>What's in your 20-section report</p>
       <div className="ikigai-feature-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10 }}>
         {[
           ['Your Ikigai Sentence','Your purpose distilled to one definitive line'],
-          ['Your Archetype','The specific identity type you embody'],
+          ['Your Discovery Profile','The pattern that\'s been true about you all along'],
           ['Your Niche','Who you serve and how to say it at a dinner'],
           ['The ONE Thing','Your highest-leverage 90-day focus'],
           ['3 Content Pillars','What to own and post publicly'],
@@ -525,6 +609,25 @@ const Landing = ({ onStart, isVerifying = false }) => (
           </div>
         ))}
       </div>
+    </div>
+
+    <div style={{ borderTop:`1px solid ${G.brd}` }}/>
+
+    {/* FAQ */}
+    <div style={{ maxWidth:600, margin:'0 auto', padding:'56px 28px' }}>
+      <h2 style={{ fontSize:28, fontWeight:700, textAlign:'center', marginBottom:32, fontFamily:G.serif }}>Common Questions</h2>
+      {[
+        ['How is this different from a personality quiz?', 'Quizzes sort you into a category. Ikigai Journey listens to your actual answers and mirrors back what it\'s noticing — nothing generic, nothing templated.'],
+        ['What if I don\'t finish the full journey?', 'The first 4 questions are free — no payment needed. You\'ll only be asked to continue once you\'ve felt the depth of the experience for yourself.'],
+        ['Do I get to keep my report?', 'Yes. Your full 20-section report is emailed to you and always yours — no subscription, no expiry.'],
+        ['Will this actually work for me?', 'Yes — the process is the same for everyone, but every answer, pattern, and report is built entirely from what you personally share. No two reports are alike.'],
+        ['How long does it take?', '15 to 20 minutes for all 16 questions, at your own pace.'],
+      ].map(([q,a],i,arr)=>(
+        <div key={i} style={{ padding:'20px 0', borderBottom: i<arr.length-1 ? `1px solid ${G.brd}` : 'none' }}>
+          <h3 style={{ fontFamily:G.sans, fontSize:15, fontWeight:600, color:G.cream, marginBottom:8 }}>{q}</h3>
+          <p style={{ fontSize:13, color:G.muted, fontFamily:G.sans, fontWeight:300, lineHeight:1.65 }}>{a}</p>
+        </div>
+      ))}
     </div>
 
     {/* Bottom CTA */}

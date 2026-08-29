@@ -330,3 +330,9 @@ textarea:focus, input:focus {
     padding: 10px 14px 12px !important;
   }
 }
+
+/* Where You Are / Where You'll Be — stack on mobile */
+@media (max-width: 560px) {
+  .ikigai-compare-grid { flex-direction: column !important; }
+  .ikigai-compare-grid > span { transform: rotate(90deg); }
+}
