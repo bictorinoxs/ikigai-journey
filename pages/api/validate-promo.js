@@ -10,6 +10,7 @@ const PROMO_CODES = {
   'MYPURPOSE2026': { discount: 100, type: 'fixed',   label: '₱100 off' },   // ₱499 → ₱399
   'ADMINIKIGAI':   { discount: 490, type: 'fixed',   label: '₱490 off' },   // ₱499 → ₱9 (internal testing)
   'DADBUDPH':      { discount: 200, type: 'fixed',   label: '₱200 off' },   // ₱499 → ₱299
+  'RTCFAM':        { discount: 150, type: 'fixed',   label: '₱150 off' },   // ₱499 → ₱349
 };
 
 export default function handler(req, res) {
