@@ -354,11 +354,12 @@ const apiVerifyPayment = async (sessionId) => {
 // Log session to Supabase database for admin tracking
 const apiLogSession = async (sessionId, userName, email, durationMinutes, reportJson) => {
   try {
-    const promoCode = (typeof window !== 'undefined' && localStorage.getItem('ikigai_promo_code')) || null;
+    const promoCode  = (typeof window !== 'undefined' && localStorage.getItem('ikigai_promo_code')) || null;
+    const utmContent = (typeof window !== 'undefined' && localStorage.getItem('ikigai_utm_content')) || null;
     await fetch('/api/log-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, userName, email, durationMinutes, reportJson, promoCode }),
+      body: JSON.stringify({ sessionId, userName, email, durationMinutes, reportJson, promoCode, utmContent }),
     });
   } catch (err) {
     console.warn('[log-session] Failed:', err?.message);
@@ -742,7 +743,7 @@ const Payment = ({ onSuccess, onBack, freePreview = false }) => {
               <>
                 <div style={{ display:'flex', alignItems:'baseline', gap:8, justifyContent:'center' }}>
                   <span style={{ fontSize:16, color:G.muted, fontFamily:G.serif, textDecoration:'line-through' }}>₱600</span>
-                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱499</span>
+                  <span style={{ fontSize:32, fontWeight:700, color:G.gold, fontFamily:G.serif }}>₱399</span>
                 </div>
                 <div style={{ fontSize:11, color:G.muted, marginTop:4 }}>One-time · Instant access · No subscription</div>
               </>
@@ -837,7 +838,7 @@ const Payment = ({ onSuccess, onBack, freePreview = false }) => {
             disabled={loading}
             style={{ width:'100%', background:loading?G.brd:G.gold, color:loading?G.muted:G.bg, border:'none', borderRadius:10, padding:'15px', fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', fontFamily:G.sans, transition:'all .2s' }}
           >
-            {loading ? '⌛ Preparing your QR code...' : `Continue to Payment — ₱${promoResult ? promoResult.finalPesos : 499}`}
+            {loading ? '⌛ Preparing your QR code...' : `Continue to Payment — ₱${promoResult ? promoResult.finalPesos : 399}`}
           </button>
 
           <p style={{ textAlign:'center', fontSize:11, color:G.muted, marginTop:10, lineHeight:1.6, fontFamily:G.sans }}>
@@ -1558,6 +1559,21 @@ export default function App() {
       document.head.appendChild(el);
     }
     return () => { try { document.head.removeChild(el); } catch {} };
+  }, []);
+
+  // Capture Meta Ads UTM tracking code from the URL on first load.
+  // Stored in localStorage so it survives through payment/report generation
+  // and gets attached to the session log in apiLogSession — this is what
+  // lets us join Meta's click data to actual paid conversions in Supabase.
+  // NOTE: does not clear the URL here (via replaceState), since the
+  // payment-verification effect further down still needs to read ?paid=true
+  // from the same URL on this same initial mount.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const utmContent = params.get('utm_content');
+      if (utmContent) localStorage.setItem('ikigai_utm_content', utmContent);
+    } catch {}
   }, []);
 
   const [view,         setView]         = useState('landing');

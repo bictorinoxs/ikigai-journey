@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   // Accept custom amount from frontend (when promo code applied)
   // Falls back to full price if not provided
-  const FULL_PRICE = 49900; // ₱499 in centavos — live price
+  const FULL_PRICE = 39900; // ₱399 in centavos — live price
   const { amount: customAmount } = req.body || {};
   const amount = (customAmount && customAmount > 0) ? customAmount : FULL_PRICE;
 
