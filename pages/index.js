@@ -1471,7 +1471,7 @@ const InAppBrowserBlock = () => {
         Open in Your Browser
       </h2>
       <p style={{ color:G.soft, fontSize:14, lineHeight:1.75, marginBottom:28, maxWidth:320 }}>
-        For the best experience and secure payment processing, please open this page in your default browser — not inside Facebook or Instagram.
+        For the best experience, please open this page in your default browser — not inside Facebook or Instagram.
       </p>
 
       {/* Android instructions */}
