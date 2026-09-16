@@ -518,7 +518,6 @@ const Landing = ({ onStart, isVerifying = false }) => (
       }}>
         {isVerifying ? 'Verifying...' : '✦ Try It Free — Start Your Journey'}
       </button>
-      <p style={{ fontSize:12, color:G.muted, marginTop:12, fontFamily:G.sans }}>No payment needed for the first 4 questions</p>
     </div>
 
     <div style={{ borderTop:`1px solid ${G.brd}` }}/>
