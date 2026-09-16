@@ -1463,6 +1463,20 @@ const InAppBrowserBlock = () => {
     }, 1000);
   };
 
+  // On Android, fire the Chrome intent automatically as soon as this screen
+  // mounts — no need to wait for the user to read the message and tap the
+  // button. Android still shows its own native "Open with Chrome?" system
+  // prompt (that's the OS, not us), but it appears immediately instead of
+  // after a manual tap. No equivalent exists on iOS — Safari/Facebook's
+  // in-app browser gives web pages no way to auto-launch Safari there, so
+  // iPhone users still see the manual instructions below regardless.
+  useEffect(() => {
+    if (isAndroid()) {
+      const t = setTimeout(openInChrome, 350); // tiny delay so the screen paints first
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   return (
     <div style={{ position:'fixed', inset:0, background:G.bg, zIndex:99999, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, fontFamily:G.sans, textAlign:'center' }}>
       <PetalMark size={56} animated/>
