@@ -505,6 +505,22 @@ const Landing = ({ onStart, isVerifying = false }) => (
       <div className="ikigai-hero-diagram" style={{ flexShrink:0, width:420 }}><IkigaiDiagram/></div>
     </div>
 
+    {/* Early CTA — highlighted, right after hero so it's seen without scrolling past everything else */}
+    <div style={{ textAlign:'center', padding:'0 28px 48px' }}>
+      <button onClick={onStart} disabled={isVerifying} style={{
+        background: isVerifying ? G.brd : G.gold,
+        color: isVerifying ? G.muted : G.bg,
+        border:'none', borderRadius:12, padding:'20px 44px',
+        fontSize:19, fontWeight:800, cursor: isVerifying ? 'not-allowed' : 'pointer',
+        fontFamily:G.sans, letterSpacing:'0.2px',
+        boxShadow: isVerifying ? 'none' : `0 0 0 4px ${G.gold}22, 0 8px 28px ${G.gold}35`,
+        animation: isVerifying ? 'none' : 'ikigaiPulse 2.4s ease-in-out infinite',
+      }}>
+        {isVerifying ? 'Verifying...' : '✦ Try It Free — Start Your Journey'}
+      </button>
+      <p style={{ fontSize:12, color:G.muted, marginTop:12, fontFamily:G.sans }}>No payment needed for the first 4 questions</p>
+    </div>
+
     <div style={{ borderTop:`1px solid ${G.brd}` }}/>
 
     {/* Pain Hook */}
@@ -1463,16 +1479,16 @@ const InAppBrowserBlock = () => {
     }, 1000);
   };
 
-  // On Android, fire the Chrome intent automatically as soon as this screen
-  // mounts — no need to wait for the user to read the message and tap the
-  // button. Android still shows its own native "Open with Chrome?" system
-  // prompt (that's the OS, not us), but it appears immediately instead of
-  // after a manual tap. No equivalent exists on iOS — Safari/Facebook's
-  // in-app browser gives web pages no way to auto-launch Safari there, so
-  // iPhone users still see the manual instructions below regardless.
+  // On Android, fire the Chrome intent automatically after a short delay —
+  // gives the user 3 seconds to actually see the page/brand before Android's
+  // native "Open with Chrome?" system prompt interrupts them, rather than
+  // firing it instantly and feeling like a jarring redirect hijack.
+  // No equivalent exists on iOS — Safari/Facebook's in-app browser gives web
+  // pages no way to auto-launch Safari there, so iPhone users still see the
+  // manual instructions below regardless.
   useEffect(() => {
     if (isAndroid()) {
-      const t = setTimeout(openInChrome, 350); // tiny delay so the screen paints first
+      const t = setTimeout(openInChrome, 3000);
       return () => clearTimeout(t);
     }
   }, []);
