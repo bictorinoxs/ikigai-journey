@@ -11,18 +11,20 @@ const G = {
 };
 
 const STEP_LABELS = {
-  page_view:         'Page View',
-  cta_click:         'CTA Click',
-  preview_complete:  'Preview Complete',
-  payment_verified:  'Payment Verified',
-  report_generated:  'Report Generated',
+  page_view:            'Page View',
+  blocked_inapp_browser:'Blocked (In-App Browser)',
+  cta_click:            'CTA Click',
+  preview_complete:     'Preview Complete',
+  payment_verified:     'Payment Verified',
+  report_generated:     'Report Generated',
 };
 const STEP_COLORS = {
-  page_view:         G.muted,
-  cta_click:         G.lav,
-  preview_complete:  G.coral,
-  payment_verified:  G.sage,
-  report_generated:  G.gold,
+  page_view:            G.muted,
+  blocked_inapp_browser:G.coral,
+  cta_click:            G.lav,
+  preview_complete:     G.coral,
+  payment_verified:     G.sage,
+  report_generated:     G.gold,
 };
 
 export default function Admin() {
@@ -87,9 +89,16 @@ export default function Admin() {
 
   const steps      = funnel?.steps || [];
   const counts     = funnel?.counts || {};
-  const maxCount   = Math.max(1, ...steps.map(s => counts[s] || 0));
   const ctaSources = funnel?.byCtaSource || {};
   const utmRows    = funnel ? Object.entries(funnel.byUtm || {}) : [];
+
+  // page_view and blocked_inapp_browser are two possible OUTCOMES of the
+  // same ad click — not sequential steps — so they're shown side by side,
+  // and everything after cta_click is measured against page_view (real
+  // landing-page reach), never against the blocked count.
+  const totalAdClicks = (counts.page_view || 0) + (counts.blocked_inapp_browser || 0);
+  const funnelSteps   = steps.filter(s => s !== 'blocked_inapp_browser');
+  const maxCount      = Math.max(1, ...funnelSteps.map(s => counts[s] || 0));
 
   const pct = (fromStep, toStep) => {
     const from = counts[fromStep] || 0;
@@ -142,15 +151,42 @@ export default function Admin() {
             <p style={{ color: G.muted, textAlign: 'center', padding: 40 }}>No funnel data yet — tracking starts once this deploys and someone visits the site.</p>
           ) : (
             <>
-              {/* Funnel bars */}
+              {/* Ad reach split — mutually exclusive outcomes of the same click */}
+              <div style={{ background: G.surf, border: `1px solid ${G.brd}`, borderRadius: 14, padding: '22px 24px', marginBottom: 20 }}>
+                <p style={{ fontSize: 11, color: G.muted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 14 }}>
+                  Ad Clicks Reaching the Site · {totalAdClicks} total
+                </p>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1, background: G.surf2, borderRadius: 10, padding: '14px 18px' }}>
+                    <p style={{ fontSize: 11, color: G.muted, marginBottom: 4 }}>Saw real landing page</p>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: G.sage, margin: 0 }}>
+                      {counts.page_view || 0}
+                      <span style={{ fontSize: 12, color: G.muted, fontWeight: 400, marginLeft: 8 }}>
+                        {totalAdClicks ? `(${((counts.page_view || 0) / totalAdClicks * 100).toFixed(0)}%)` : ''}
+                      </span>
+                    </p>
+                  </div>
+                  <div style={{ flex: 1, background: G.surf2, borderRadius: 10, padding: '14px 18px' }}>
+                    <p style={{ fontSize: 11, color: G.muted, marginBottom: 4 }}>Blocked — in-app browser</p>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: G.coral, margin: 0 }}>
+                      {counts.blocked_inapp_browser || 0}
+                      <span style={{ fontSize: 12, color: G.muted, fontWeight: 400, marginLeft: 8 }}>
+                        {totalAdClicks ? `(${((counts.blocked_inapp_browser || 0) / totalAdClicks * 100).toFixed(0)}%)` : ''}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Funnel bars — sequential, based on page_view (real reach only) */}
               <div style={{ background: G.surf, border: `1px solid ${G.brd}`, borderRadius: 14, padding: '22px 24px', marginBottom: 20 }}>
                 <p style={{ fontSize: 11, color: G.muted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 18 }}>
                   Conversion Funnel · {funnel.totalEvents} events logged
                 </p>
-                {steps.map((step, i) => {
+                {funnelSteps.map((step, i) => {
                   const val = counts[step] || 0;
                   const widthPct = (val / maxCount) * 100;
-                  const dropFromPrev = i > 0 ? pct(steps[i - 1], step) : null;
+                  const dropFromPrev = i > 0 ? pct(funnelSteps[i - 1], step) : null;
                   return (
                     <div key={step} style={{ marginBottom: 16 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>

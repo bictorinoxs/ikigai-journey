@@ -1634,11 +1634,19 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Log a page_view once per mount. Runs after the UTM-capture effect above
-  // (React runs effects in declaration order on the same mount), so
-  // utm_content is already in localStorage by the time this fires.
+  // Log page_view only for visitors who actually see the real landing page —
+  // and a separate blocked_inapp_browser event for those who instead hit the
+  // "switch browsers" screen. Uses the exact same synchronous check
+  // (detectInAppBrowser) that decides which screen renders below, so there's
+  // no timing mismatch with the isInApp state variable. Runs after the
+  // UTM-capture effect above (React runs effects in declaration order on the
+  // same mount), so utm_content is already in localStorage by the time this fires.
   useEffect(() => {
-    trackEvent('page_view');
+    if (detectInAppBrowser()) {
+      trackEvent('blocked_inapp_browser');
+    } else {
+      trackEvent('page_view');
+    }
   }, []);
 
   const [view,         setView]         = useState('landing');
