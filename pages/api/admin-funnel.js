@@ -61,12 +61,26 @@ export default async function handler(req, res) {
       byUtm[tag][r.event_type] = (byUtm[tag][r.event_type] || 0) + 1;
     });
 
+    // Daily breakdown — dates in Asia/Manila so a "day" matches PH time,
+    // not UTC. Capped to the most recent 30 days with any activity.
+    const byDay = {};
+    rows.forEach(r => {
+      const day = new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }); // YYYY-MM-DD
+      if (!byDay[day]) byDay[day] = {};
+      byDay[day][r.event_type] = (byDay[day][r.event_type] || 0) + 1;
+    });
+    const dayEntries = Object.entries(byDay)
+      .sort((a, b) => b[0].localeCompare(a[0])) // newest first
+      .slice(0, 30);
+    const byDayCapped = Object.fromEntries(dayEntries);
+
     return res.status(200).json({
       ok: true,
       steps: STEPS,
       counts,
       byCtaSource,
       byUtm,
+      byDay: byDayCapped,
       totalEvents: rows.length,
       latestAt: rows[0]?.created_at || null,
     });

@@ -91,6 +91,7 @@ export default function Admin() {
   const counts     = funnel?.counts || {};
   const ctaSources = funnel?.byCtaSource || {};
   const utmRows    = funnel ? Object.entries(funnel.byUtm || {}) : [];
+  const dayRows    = funnel ? Object.entries(funnel.byDay || {}) : []; // already newest-first from the API
 
   // page_view and blocked_inapp_browser are two possible OUTCOMES of the
   // same ad click — not sequential steps — so they're shown side by side,
@@ -243,6 +244,38 @@ export default function Admin() {
                             <td style={{ padding: '10px 12px', color: G.gold, fontFamily: 'monospace', fontSize: 12 }}>{tag}</td>
                             {steps.map(s => (
                               <td key={s} style={{ padding: '10px 12px', textAlign: 'right', color: G.soft }}>{evs[s] || 0}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              {/* Daily breakdown */}
+              <div style={{ background: G.surf, border: `1px solid ${G.brd}`, borderRadius: 14, padding: '22px 24px', marginTop: 20 }}>
+                <p style={{ fontSize: 11, color: G.muted, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 14 }}>Daily Breakdown · Last 30 days with activity (PH time)</p>
+                {dayRows.length === 0 ? (
+                  <p style={{ color: G.muted, fontSize: 13 }}>No daily data yet.</p>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${G.brd}` }}>
+                          <th style={{ textAlign: 'left', padding: '8px 12px', color: G.muted, fontSize: 11, textTransform: 'uppercase' }}>Date</th>
+                          {steps.map(s => (
+                            <th key={s} style={{ textAlign: 'right', padding: '8px 12px', color: G.muted, fontSize: 11, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{STEP_LABELS[s]}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayRows.map(([day, evs]) => (
+                          <tr key={day} style={{ borderBottom: `1px solid ${G.brd}` }}>
+                            <td style={{ padding: '10px 12px', color: G.cream, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                              {new Date(day + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            {steps.map(s => (
+                              <td key={s} style={{ padding: '10px 12px', textAlign: 'right', color: s === 'blocked_inapp_browser' ? G.coral : G.soft }}>{evs[s] || 0}</td>
                             ))}
                           </tr>
                         ))}
