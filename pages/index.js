@@ -545,7 +545,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
         boxShadow: isVerifying ? 'none' : `0 0 0 4px ${G.gold}22, 0 8px 28px ${G.gold}35`,
         animation: isVerifying ? 'none' : 'ikigaiPulse 2.4s ease-in-out infinite',
       }}>
-        {isVerifying ? 'Verifying...' : '✦ Try It Free — Start Your Journey'}
+        {isVerifying ? 'Verifying...' : '👉 Click / Tap Here to Start Your Journey'}
       </button>
     </div>
 
@@ -631,6 +631,13 @@ const Landing = ({ onStart, isVerifying = false }) => (
       ))}
     </div>
 
+    {/* Mid-page CTA — a second chance to convert before Feature boxes/FAQ */}
+    <div style={{ textAlign:'center', padding:'0 28px 48px' }}>
+      <button onClick={() => onStart('mid_section')} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:12, padding:'18px 40px', fontSize:17, fontWeight:800, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px', boxShadow: isVerifying ? 'none' : `0 6px 22px ${G.gold}30` }}>
+        {isVerifying ? 'Verifying...' : '👉 Click / Tap Here to Start Your Journey'}
+      </button>
+    </div>
+
     <div style={{ borderTop:`1px solid ${G.brd}` }}/>
 
     {/* Features */}
@@ -682,7 +689,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
         Try it for free.
       </p>
       <button onClick={() => onStart('footer_bottom')} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
-        {isVerifying ? 'Verifying...' : 'Start My Journey'}
+        {isVerifying ? 'Verifying...' : '👉 Click / Tap Here to Start Your Journey'}
       </button>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans, opacity:.7 }}>A product by Purposely Learning Hub</p>
@@ -1490,30 +1497,21 @@ const detectInAppBrowser = () => {
 const isAndroid = () => typeof window !== 'undefined' && /Android/i.test(navigator.userAgent);
 const isIOS     = () => typeof window !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-const InAppBrowserBlock = () => {
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-  // Short, clean URL for display/copying — the full currentUrl (with any
-  // query params) is still used below for the Chrome intent so the exact
-  // page reopens correctly; users just don't need to see all of that.
-  const displayUrl = 'https://app.purposelylearning.com';
-
+// Shown only at the moment someone taps "Start Your Journey" while inside
+// Facebook/Instagram's in-app browser — not on page load. The landing page
+// itself is always safe to view in-app; only the chat/payment flow that
+// follows has known reliability issues in that browser, so that's the only
+// point where we ask them to switch.
+const InAppBrowserBlock = ({ targetUrl, onCancel }) => {
   const openInChrome = () => {
-    // Android intent to open in Chrome
-    const intentUrl = 'intent://' + currentUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    const intentUrl = 'intent://' + targetUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
     window.location.href = intentUrl;
-    // Fallback after 1s if intent fails
-    setTimeout(() => {
-      window.location.href = currentUrl;
-    }, 1000);
+    setTimeout(() => { window.location.href = targetUrl; }, 1000);
   };
 
   // On Android, fire the Chrome intent automatically after a short delay —
-  // gives the user 3 seconds to actually see the page/brand before Android's
-  // native "Open with Chrome?" system prompt interrupts them, rather than
-  // firing it instantly and feeling like a jarring redirect hijack.
-  // No equivalent exists on iOS — Safari/Facebook's in-app browser gives web
-  // pages no way to auto-launch Safari there, so iPhone users still see the
-  // manual instructions below regardless.
+  // gives the user 3 seconds to see this screen before Android's native
+  // "Open with Chrome?" system prompt interrupts them.
   useEffect(() => {
     if (isAndroid()) {
       const t = setTimeout(openInChrome, 3000);
@@ -1526,10 +1524,10 @@ const InAppBrowserBlock = () => {
       <PetalMark size={56} animated/>
 
       <h2 style={{ color:G.gold, fontSize:22, fontFamily:G.serif, fontWeight:700, marginTop:20, marginBottom:10 }}>
-        Open in Your Browser
+        Continue in Your Browser
       </h2>
       <p style={{ color:G.soft, fontSize:14, lineHeight:1.75, marginBottom:28, maxWidth:320 }}>
-        For the best experience, please open this page in your default browser — not inside Facebook or Instagram.
+        Your journey and payment work best outside Facebook or Instagram — open this page in your default browser to continue.
       </p>
 
       {/* Android instructions */}
@@ -1573,8 +1571,14 @@ const InAppBrowserBlock = () => {
 
       <p style={{ color:G.muted, fontSize:11, marginTop:20, lineHeight:1.6 }}>
         Or copy this link and paste it in Chrome or Safari:<br/>
-        <span style={{ color:G.gold, wordBreak:'break-all', fontSize:11 }}>{displayUrl}</span>
+        <span style={{ color:G.gold, wordBreak:'break-all', fontSize:11 }}>{targetUrl}</span>
       </p>
+
+      {onCancel && (
+        <button onClick={onCancel} style={{ background:'none', border:'none', color:G.muted, fontSize:12, marginTop:24, cursor:'pointer', textDecoration:'underline' }}>
+          ← Back to the page
+        </button>
+      )}
     </div>
   );
 };
@@ -1619,6 +1623,21 @@ export default function App() {
     return () => { try { document.head.removeChild(el); } catch {} };
   }, []);
 
+  // Adopt a visitor token carried in the URL (?vid=...), if present.
+  // This is how identity survives the Facebook/Instagram -> Chrome/Safari
+  // browser switch: localStorage genuinely cannot be shared between two
+  // separate browser engines, but a token embedded in the URL travels with
+  // the redirect, so the new browser picks up the SAME visitor id instead
+  // of generating a fresh one. Runs before getOrCreateVisitorId is ever
+  // called (page_view effect below), so it's already in place by then.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const vid = params.get('vid');
+      if (vid) localStorage.setItem('ikigai_visitor_id', vid);
+    } catch {}
+  }, []);
+
   // Capture Meta Ads UTM tracking code from the URL on first load.
   // Stored in localStorage so it survives through payment/report generation
   // and gets attached to the session log in apiLogSession — this is what
@@ -1634,19 +1653,13 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Log page_view only for visitors who actually see the real landing page —
-  // and a separate blocked_inapp_browser event for those who instead hit the
-  // "switch browsers" screen. Uses the exact same synchronous check
-  // (detectInAppBrowser) that decides which screen renders below, so there's
-  // no timing mismatch with the isInApp state variable. Runs after the
-  // UTM-capture effect above (React runs effects in declaration order on the
-  // same mount), so utm_content is already in localStorage by the time this fires.
+  // Runs after the UTM-capture effect above (React runs effects in
+  // declaration order on the same mount), so utm_content is already in
+  // localStorage by the time this fires. Landing is always shown now, so
+  // page_view always fires — whether they're in-app or not is attached as
+  // metadata instead of splitting into a separate blocking step.
   useEffect(() => {
-    if (detectInAppBrowser()) {
-      trackEvent('blocked_inapp_browser');
-    } else {
-      trackEvent('page_view');
-    }
+    trackEvent('page_view', { inApp: detectInAppBrowser() });
   }, []);
 
   const [view,         setView]         = useState('landing');
@@ -1666,6 +1679,7 @@ export default function App() {
   const [reportError,  setReportError]  = useState(null);
   const [generationMsg,setGenerationMsg]= useState('');
   const [isInApp,      setIsInApp]      = useState(false);
+  const [showBrowserSwitch, setShowBrowserSwitch] = useState(false); // true only after clicking Start while in-app
   const [isVerifying,  setIsVerifying]  = useState(false);
   const [resumeData,   setResumeData]   = useState(null);
   const [emailSent,    setEmailSent]    = useState(false);
@@ -1880,6 +1894,19 @@ export default function App() {
   // Called when user clicks "Begin Your Journey"
   const handleStart = async (source = 'unknown') => {
     trackEvent('cta_click', { source });
+
+    // Only the chat/payment flow that follows has known reliability issues
+    // inside Facebook/Instagram's in-app browser — the click itself is safe.
+    // Tag the current URL with this visitor's id so the SAME identity
+    // carries over once they land in Chrome/Safari (see the ?vid= capture
+    // effect above), then show the switch-browser overlay instead of
+    // starting the chat directly.
+    if (isInApp && !DEMO_MODE) {
+      trackEvent('switch_browser_shown', { source });
+      setShowBrowserSwitch(true);
+      return;
+    }
+
     if (DEMO_MODE) {
       await startChat(null);
       return;
@@ -1896,6 +1923,15 @@ export default function App() {
     // Payment is requested later, after Q2, via the PAYWALL_NOW signal.
     await startChat(null);
   };
+
+  // The URL handed to InAppBrowserBlock when it's shown — current page URL
+  // plus this visitor's id, so identity survives the browser switch.
+  const browserSwitchUrl = (() => {
+    if (typeof window === 'undefined') return '';
+    const url = new URL(window.location.href);
+    url.searchParams.set('vid', getOrCreateVisitorId() || '');
+    return url.toString();
+  })();
 
   // Called when user submits email on payment page and clicks Continue
   const handlePaymentContinue = async (email, amount) => {
@@ -2285,7 +2321,11 @@ export default function App() {
 
 
   // Block in-app browsers and ask user to open in default browser
-  if (isInApp) return <InAppBrowserBlock/>;
+  // NOTE: landing page is always shown now, even inside Facebook/Instagram's
+  // in-app browser — it has no localStorage writes or payment steps, so
+  // there's nothing there that's known to break. The browser-switch prompt
+  // only appears later, at the moment "Start Your Journey" is actually
+  // clicked (see handleStart / showBrowserSwitch below).
 
   if (view === 'report') {
     return <Report data={reportData} onRestart={reset} emailSent={emailSent} token={accessToken || getToken()} userEmail={localStorage.getItem('ikigai_user_email') || ''} />;
@@ -2327,6 +2367,12 @@ export default function App() {
         : <>
             {resumeData && <ResumeModal answerCount={resumeData.answerCount} onResume={handleResume} onRestart={handleDismissResume}/>}
             <Landing onStart={handleStart} isVerifying={isVerifying}/>
+            {showBrowserSwitch && (
+              <InAppBrowserBlock
+                targetUrl={browserSwitchUrl}
+                onCancel={() => setShowBrowserSwitch(false)}
+              />
+            )}
           </>
       }
     </>

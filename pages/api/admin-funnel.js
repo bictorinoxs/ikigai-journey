@@ -38,10 +38,11 @@ export default async function handler(req, res) {
     const rows = await response.json();
 
     // Overall funnel counts, in the expected step order.
-    // blocked_inapp_browser is tracked separately from page_view — it tells
-    // you how many ad clicks landed on the "switch browsers" screen instead
-    // of the real landing page, which page_view alone can't distinguish.
-    const STEPS = ['page_view', 'blocked_inapp_browser', 'cta_click', 'preview_complete', 'payment_verified', 'report_generated'];
+    // switch_browser_shown fires when someone taps a CTA while inside
+    // Facebook/Instagram's in-app browser and is asked to continue in
+    // Chrome/Safari — tells you how many people hit that extra step versus
+    // clicking straight through in a normal browser.
+    const STEPS = ['page_view', 'cta_click', 'switch_browser_shown', 'preview_complete', 'payment_verified', 'report_generated'];
     const counts = {};
     STEPS.forEach(s => { counts[s] = 0; });
     rows.forEach(r => { if (counts[r.event_type] !== undefined) counts[r.event_type]++; });
