@@ -350,6 +350,35 @@ const apiVerifyPayment = async (sessionId) => {
   return d; // { token, verified }
 };
 
+// A stable per-browser id (not per-session) so funnel events for the same
+// visitor can be connected across page_view -> cta_click -> payment, even
+// before they have an access token. Persists in localStorage indefinitely.
+const getOrCreateVisitorId = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    let id = localStorage.getItem('ikigai_visitor_id');
+    if (!id) {
+      id = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('ikigai_visitor_id', id);
+    }
+    return id;
+  } catch { return null; }
+};
+
+// Fire-and-forget funnel event logger. Never awaited by callers, never
+// throws — tracking must not be able to break the actual product flow.
+const trackEvent = (eventType, meta) => {
+  try {
+    const visitorId  = getOrCreateVisitorId();
+    const utmContent = (typeof window !== 'undefined' && localStorage.getItem('ikigai_utm_content')) || null;
+    fetch('/api/track-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventType, visitorId, utmContent, meta }),
+    }).catch(() => {}); // swallow network errors — best-effort only
+  } catch {}
+};
+
 // Send report via email + return HTML for download
 // Log session to Supabase database for admin tracking
 const apiLogSession = async (sessionId, userName, email, durationMinutes, reportJson) => {
@@ -507,7 +536,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
 
     {/* Early CTA — highlighted, right after hero so it's seen without scrolling past everything else */}
     <div style={{ textAlign:'center', padding:'0 28px 48px' }}>
-      <button onClick={onStart} disabled={isVerifying} style={{
+      <button onClick={() => onStart('hero_early')} disabled={isVerifying} style={{
         background: isVerifying ? G.brd : G.gold,
         color: isVerifying ? G.muted : G.bg,
         border:'none', borderRadius:12, padding:'20px 44px',
@@ -652,7 +681,7 @@ const Landing = ({ onStart, isVerifying = false }) => (
       <p style={{ fontSize:15, color:G.soft, marginBottom:26, fontFamily:G.sans, maxWidth:420, marginLeft:'auto', marginRight:'auto', lineHeight:1.6 }}>
         Try it for free.
       </p>
-      <button onClick={onStart} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
+      <button onClick={() => onStart('footer_bottom')} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
         {isVerifying ? 'Verifying...' : 'Start My Journey'}
       </button>
       <p style={{ fontSize:11, color:G.muted, marginTop:14, fontFamily:G.sans }}>⏱ Takes 15–20 minutes · Answer 16 guided questions · Receive your 20-section report</p>
@@ -1605,6 +1634,13 @@ export default function App() {
     } catch {}
   }, []);
 
+  // Log a page_view once per mount. Runs after the UTM-capture effect above
+  // (React runs effects in declaration order on the same mount), so
+  // utm_content is already in localStorage by the time this fires.
+  useEffect(() => {
+    trackEvent('page_view');
+  }, []);
+
   const [view,         setView]         = useState('landing');
   const [messages,     setMessages]     = useState([]);
   const [input,        setInput]        = useState('');
@@ -1823,6 +1859,7 @@ export default function App() {
       const result = await apiVerifyPayment(sessionId);
       if (result.verified && result.token) {
         persistToken(result.token);
+        trackEvent('payment_verified');
         await resumeAfterPayment(result.token);
       }
     } catch (err) {
@@ -1833,7 +1870,8 @@ export default function App() {
   };
 
   // Called when user clicks "Begin Your Journey"
-  const handleStart = async () => {
+  const handleStart = async (source = 'unknown') => {
+    trackEvent('cta_click', { source });
     if (DEMO_MODE) {
       await startChat(null);
       return;
@@ -2051,6 +2089,7 @@ export default function App() {
           setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: displayText, streaming: false } : m));
           // Don't auto-forward — wait for the user to type "continue"
           setAwaitingContinue(true);
+          trackEvent('preview_complete');
         }
         // Detect if Claude is about to generate the report
         if (text.includes('GENERATE_REPORT_NOW')) {
@@ -2218,6 +2257,7 @@ export default function App() {
 
       console.log('[generateReport] ✅ Report ready for:', json.user_name || userName);
       apiLogSession(tok?.slice(-12)||null, json.user_name||userName, userEmail, durationMinutes, json);
+      trackEvent('report_generated');
       apiSendReport(json, tok, userEmail).then(r => {
         if (r.emailSent) setEmailSent(true);
         console.log('[report email]', r.emailSent ? '✅ ' + r.recipientEmail : '❌ ' + r.emailError);
