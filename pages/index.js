@@ -536,6 +536,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
 
     {/* Early CTA — highlighted, right after hero so it's seen without scrolling past everything else */}
     <div style={{ textAlign:'center', padding:'0 28px 48px' }}>
+      <p style={{ display:'inline-block', background:`${G.sage}22`, color:G.sage, fontSize:12, fontWeight:700, letterSpacing:'0.5px', padding:'5px 14px', borderRadius:20, marginBottom:14, fontFamily:G.sans }}>✦ FREE TO START</p>
+      <br/>
       <button onClick={() => onStart('hero_early')} disabled={isVerifying} style={{
         background: isVerifying ? G.brd : G.gold,
         color: isVerifying ? G.muted : G.bg,
@@ -633,6 +635,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
 
     {/* Mid-page CTA — a second chance to convert before Feature boxes/FAQ */}
     <div style={{ textAlign:'center', padding:'0 28px 48px' }}>
+      <p style={{ display:'inline-block', background:`${G.sage}22`, color:G.sage, fontSize:12, fontWeight:700, letterSpacing:'0.5px', padding:'5px 14px', borderRadius:20, marginBottom:14, fontFamily:G.sans }}>✦ FREE TO START</p>
+      <br/>
       <button onClick={() => onStart('mid_section')} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:12, padding:'18px 40px', fontSize:17, fontWeight:800, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px', boxShadow: isVerifying ? 'none' : `0 6px 22px ${G.gold}30` }}>
         {isVerifying ? 'Verifying...' : '👉 Click / Tap Here to Start Your Journey'}
       </button>
@@ -685,9 +689,8 @@ const Landing = ({ onStart, isVerifying = false }) => (
     {/* Bottom CTA */}
     <div style={{ textAlign:'center', padding:'48px 28px', borderTop:`1px solid ${G.brd}` }}>
       <div style={{ display:'flex', justifyContent:'center', marginBottom:16 }}><PetalMark size={48} animated/></div>
-      <p style={{ fontSize:15, color:G.soft, marginBottom:26, fontFamily:G.sans, maxWidth:420, marginLeft:'auto', marginRight:'auto', lineHeight:1.6 }}>
-        Try it for free.
-      </p>
+      <p style={{ display:'inline-block', background:`${G.sage}22`, color:G.sage, fontSize:12, fontWeight:700, letterSpacing:'0.5px', padding:'5px 14px', borderRadius:20, marginBottom:18, fontFamily:G.sans }}>✦ FREE TO START</p>
+      <br/>
       <button onClick={() => onStart('footer_bottom')} disabled={isVerifying} style={{ background:isVerifying?G.brd:G.gold, color:isVerifying?G.muted:G.bg, border:'none', borderRadius:9, padding:'16px 48px', fontSize:17, fontWeight:700, cursor:isVerifying?'not-allowed':'pointer', fontFamily:G.sans, letterSpacing:'0.2px' }}>
         {isVerifying ? 'Verifying...' : '👉 Click / Tap Here to Start Your Journey'}
       </button>
@@ -1711,9 +1714,10 @@ export default function App() {
   // to checkout (see handleStart below), and read back here on return.
   useEffect(() => {
     if (DEMO_MODE) return; // Skip token logic entirely in demo mode
-    const params   = new URLSearchParams(window.location.search);
-    const paid     = params.get('paid'); // just "true", not a session ID
-    const existing = getToken();
+    const params    = new URLSearchParams(window.location.search);
+    const paid      = params.get('paid'); // just "true", not a session ID
+    const autostart = params.get('autostart');
+    const existing  = getToken();
 
     if (paid === 'true') {
       window.history.replaceState({}, '', window.location.pathname);
@@ -1724,6 +1728,14 @@ export default function App() {
       } else {
         alert('Could not find your payment session. Contact support if you were charged.');
       }
+    } else if (autostart === '1') {
+      // Arrived here via the Facebook/Instagram -> Chrome/Safari switch
+      // (see browserSwitchUrl below) — skip the landing page entirely and
+      // go straight into the free preview, exactly as if they'd just
+      // clicked "Start Your Journey" in this browser.
+      window.history.replaceState({}, '', window.location.pathname);
+      trackEvent('cta_click', { source: 'autostart_after_switch' });
+      startChat(existing || null);
     } else if (existing) {
       setAccessToken(existing);
       const saved = loadChat();
@@ -1897,13 +1909,28 @@ export default function App() {
 
     // Only the chat/payment flow that follows has known reliability issues
     // inside Facebook/Instagram's in-app browser — the click itself is safe.
-    // Tag the current URL with this visitor's id so the SAME identity
-    // carries over once they land in Chrome/Safari (see the ?vid= capture
-    // effect above), then show the switch-browser overlay instead of
-    // starting the chat directly.
+    // Tag the current URL with this visitor's id + autostart flag so the
+    // SAME identity carries over and chat begins immediately once they land
+    // in a real browser (see the ?vid=/?autostart= handling in the mount
+    // effect above).
     if (isInApp && !DEMO_MODE) {
-      trackEvent('switch_browser_shown', { source });
-      setShowBrowserSwitch(true);
+      const url = new URL(window.location.href);
+      url.searchParams.set('vid', getOrCreateVisitorId() || '');
+      url.searchParams.set('autostart', '1');
+      const taggedUrl = url.toString();
+
+      trackEvent('switch_browser_shown', { source, auto: isAndroid() });
+
+      if (isAndroid()) {
+        // Android can auto-launch Chrome — skip the overlay entirely and
+        // fire the redirect the instant the button is tapped.
+        const intentUrl = 'intent://' + taggedUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+        window.location.href = intentUrl;
+        setTimeout(() => { window.location.href = taggedUrl; }, 1000); // fallback if the intent fails
+      } else {
+        // iOS has no equivalent auto-launch — show manual instructions.
+        setShowBrowserSwitch(true);
+      }
       return;
     }
 
@@ -1925,11 +1952,14 @@ export default function App() {
   };
 
   // The URL handed to InAppBrowserBlock when it's shown — current page URL
-  // plus this visitor's id, so identity survives the browser switch.
+  // plus this visitor's id and an autostart flag, so once they land in
+  // Chrome/Safari the chat begins immediately instead of showing the
+  // landing page again (see the ?autostart=1 handling in the mount effect above).
   const browserSwitchUrl = (() => {
     if (typeof window === 'undefined') return '';
     const url = new URL(window.location.href);
     url.searchParams.set('vid', getOrCreateVisitorId() || '');
+    url.searchParams.set('autostart', '1');
     return url.toString();
   })();
 
